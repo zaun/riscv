@@ -1,0 +1,16 @@
+# Test output
+graph
+
+# App used with make run_cpu
+etc/program.sv
+
+# App used with tl_ul_bios
+etc/bios/bios.bin
+etc/bios/bios.hex
+etc/bios/bios.opcodes
+
+# FPGA Bitstream
+out.fs
+
+# macOS random
+.DS_Store
