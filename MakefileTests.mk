@@ -26,15 +26,19 @@ test_cpu_mdu:
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu_mdu.vvp
 
-# test_cpu_bmu:
-# 	mkdir -p ./graph
+test_cpu_bmu:
+	mkdir -p ./graph
 
-# 	iverilog -g2012 -o graph/cpu_bmu.vvp -s cpu_bmu_tb test/cpu_bmu_tb.sv
-# 	vvp -N graph/cpu_bmu.vvp
-# 	mv ./cpu_bmu_tb.vcd ./graph/cpu_bmu.vcd
+	iverilog -g2012 -o graph/cpu_bmu.vvp -s cpu_bmu_tb test/cpu_bmu_tb.sv
+	vvp -N graph/cpu_bmu.vvp
+	mv ./cpu_bmu_tb.vcd ./graph/cpu_bmu_32.vcd
 
-# 	# Clean Up: Remove intermediate .vvp files
-# 	rm -f graph/cpu_bmu.vvp
+	iverilog -g2012 -DXLEN=64 -o graph/cpu_bmu.vvp -s cpu_bmu_tb test/cpu_bmu_tb.sv
+	vvp -N graph/cpu_bmu.vvp
+	mv ./cpu_bmu_tb.vcd ./graph/cpu_bmu_64.vcd
+
+	# Clean Up: Remove intermediate .vvp files
+	rm -f graph/cpu_bmu.vvp
 
 test_cpu_csr:
 	mkdir -p ./graph
@@ -105,9 +109,25 @@ test_cpu:
 	vvp -N graph/cpu.vvp
 	mv ./cpu_tb.vcd ./graph/cpu_32.vcd
 
+	iverilog -g2012 -DSUPPORT_M -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
+	vvp -N graph/cpu.vvp
+	mv ./cpu_tb.vcd ./graph/cpu_32_m.vcd
+
+	iverilog -g2012 -DSUPPORT_B -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
+	vvp -N graph/cpu.vvp
+	mv ./cpu_tb.vcd ./graph/cpu_32_b.vcd
+
 	iverilog -g2012 -DXLEN=64 -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
 	vvp -N graph/cpu.vvp
 	mv ./cpu_tb.vcd ./graph/cpu_64.vcd
+
+	iverilog -g2012 -DXLEN=64 -DSUPPORT_M -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
+	vvp -N graph/cpu.vvp
+	mv ./cpu_tb.vcd ./graph/cpu_64_m.vcd
+
+	iverilog -g2012 -DXLEN=64 -DSUPPORT_B -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
+	vvp -N graph/cpu.vvp
+	mv ./cpu_tb.vcd ./graph/cpu_64_b.vcd
 
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu.vvp

@@ -151,9 +151,14 @@
 `define HAS_M 0
 `endif
 
+`ifdef SUPPORT_B
+`define HAS_B 1
+`else
+`define HAS_B 0
+`endif
+
 // Unsupported extentions 
 `define HAS_A 0 
-`define HAS_B 0
 `define HAS_C 0 
 `define HAS_D 0 
 `define HAS_E 0 

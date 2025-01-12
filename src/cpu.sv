@@ -41,6 +41,7 @@
  * Optional Extensions:
  * - SUPPORT_ZICSR: Enables access to Control and Status Registers for
  *                  managing exceptions and interrupts.
+ * - SUPPORT_B: Adds bit manupulation operations via the BMU.
  * - SUPPORT_M: Adds multiplication and division operations via the MDU.
  *
  * Development Considerations:
@@ -66,7 +67,7 @@
  * - Integration: Can be integrated into larger systems requiring a simple 
  *   RISC-V core with optional extensions. Ensure that the memory interface 
  *   adheres to the TL-UL protocol and that optional extension parameters 
- *   (`SUPPORT_ZICSR`, `SUPPORT_M`) are configured as 
+ *   (`SUPPORT_ZICSR`, `SUPPORT_B`, `SUPPORT_M`) are configured as 
  *   needed.
  * - Simulation: Ideal for educational simulations and testing scenarios 
  *   where a clear, step-by-step instruction flow is beneficial. Utilize the 
@@ -91,6 +92,9 @@
 `endif
 `ifdef SUPPORT_M
 `include "src/cpu_mdu.sv"
+`endif
+`ifdef SUPPORT_B
+`include "src/cpu_bmu.sv"
 `endif
 
 module rv_cpu #(
@@ -295,6 +299,20 @@ cpu_alu #(.XLEN(XLEN)) alu_inst (
     .less_than          (alu_less_than),
     .unsigned_less_than (alu_unsigned_less_than)
 );
+
+`ifdef SUPPORT_B
+// BMU Signals
+logic [XLEN-1:0] bmu_operand_a, bmu_operand_b;
+logic [3:0]      bmu_control;
+logic [XLEN-1:0] bmu_result;
+
+cpu_alu #(.XLEN(XLEN)) bmu_inst (
+    .operand_a          (bmu_operand_a),
+    .operand_b          (bmu_operand_b),
+    .control            (bmu_control),
+    .result             (bmu_result)
+);
+`endif
 
 `ifdef SUPPORT_M
 // MDU Signals
@@ -544,6 +562,11 @@ always_ff @(posedge clk or posedge reset) begin
                 alu_operand_b <= is_op_imm ? imm : rs2_data;
                 alu_control  <= `ALU_ADD;
 
+                `ifdef SUPPORT_B ////////////////////////////////////////////////////
+                bmu_operand_a <= rs1_data;
+                bmu_operand_b <= is_op_imm ? imm : rs2_data;
+                bmu_control  <= `ALU_ADD;
+                `endif // SUPPORT_B /////////////////////////////////////////////////
 
                 `ifdef SUPPORT_M ////////////////////////////////////////////////////
                 mdu_operand_a <= rs1_data;
@@ -597,6 +620,39 @@ always_ff @(posedge clk or posedge reset) begin
                             `INST_SLL      : begin work_unit <= ALU; alu_control <= `ALU_SLL; end
                             `INST_SRA      : begin work_unit <= ALU; alu_control <= `ALU_SRA; end
                             `INST_SRL      : begin work_unit <= ALU; alu_control <= `ALU_SRL; end
+                            `ifdef SUPPORT_B ////////////////////////////////////////////////////
+                            `INST_ANDN     : begin work_unit <= BMU; bmu_control = `BMU_ANDN; end
+                            `INST_BCLR     : begin work_unit <= BMU; bmu_control = `BMU_BCLR; end
+                            `INST_BEXT     : begin work_unit <= BMU; bmu_control = `BMU_BEXT; end
+                            `INST_BINV     : begin work_unit <= BMU; bmu_control = `BMU_BINV; end
+                            `INST_BSET     : begin work_unit <= BMU; bmu_control = `BMU_BSET; end
+                            `INST_CLMUL    : begin work_unit <= BMU; bmu_control = `BMU_CLMUL; end
+                            `INST_CLMULH   : begin work_unit <= BMU; bmu_control = `BMU_CLMULH; end
+                            `INST_CLMULR   : begin work_unit <= BMU; bmu_control = `BMU_CLMULR; end
+                            `INST_MAX      : begin work_unit <= BMU; bmu_control = `BMU_MAX; end
+                            `INST_MAXU     : begin work_unit <= BMU; bmu_control = `BMU_MAXU; end
+                            `INST_MIN      : begin work_unit <= BMU; bmu_control = `BMU_MIN; end
+                            `INST_MINU     : begin work_unit <= BMU; bmu_control = `BMU_MINU; end
+                            `INST_ORN      : begin work_unit <= BMU; bmu_control = `BMU_ORN; end
+                            `INST_ROL      : begin work_unit <= BMU; bmu_control = `BMU_ROL; end
+                            `INST_ROR      : begin work_unit <= BMU; bmu_control = `BMU_ROR; end
+                            `INST_SH1ADD   : begin work_unit <= BMU; bmu_control = `BMU_SH1ADD; end
+                            `INST_SH2ADD   : begin work_unit <= BMU; bmu_control = `BMU_SH2ADD; end
+                            `INST_SH3ADD   : begin work_unit <= BMU; bmu_control = `BMU_SH3ADD; end
+                            `INST_XNOR     : begin work_unit <= BMU; bmu_control = `BMU_XNOR; end
+                            `INST_XPERM16  : begin work_unit <= BMU; bmu_control = `BMU_XPERM16; end
+                            `INST_XPERM32  : begin work_unit <= BMU; bmu_control = `BMU_XPERM32; end
+                            `INST_XPERM4   : begin work_unit <= BMU; bmu_control = `BMU_XPERM4; end
+                            `INST_XPERM8   : begin work_unit <= BMU; bmu_control = `BMU_XPERM8; end
+                            `INST_ZEXTH32  : begin work_unit <= BMU; bmu_control = `BMU_ZEXTH32; end
+                            `INST_ZEXTH64  : begin work_unit <= BMU; bmu_control = `BMU_ZEXTH64; end
+                            `INST_ROLW     : if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_ROL; end
+                            `INST_RORW     : if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_ROR; end
+                            `INST_ADD_UW   : if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_ADD_UW; end
+                            `INST_SH1ADD_UW: if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_SH1ADD_UW; end
+                            `INST_SH2ADD_UW: if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_SH2ADD_UW; end
+                            `INST_SH3ADD_UW: if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_SH3ADD_UW; end
+                            `endif // SUPPORT_B /////////////////////////////////////////////////
                             `INST_ADDW     : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_ADD; end
                             `INST_SUBW     : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SUB; end
                             `INST_SLLW     : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SLL; end
@@ -613,19 +669,40 @@ always_ff @(posedge clk or posedge reset) begin
                     end else if (is_op_imm) begin
                         alu_operand_b <= (funct3 == 3'b001 || funct3 == 3'b101) ? {27'b0, instr[24:20]} : imm;
                         casex ({opcode, funct3, imm[31:20]})
-                            `INST_ADDI : begin work_unit <= ALU; alu_control <= `ALU_ADD; end
-                            `INST_SLLI : begin work_unit <= ALU; alu_control <= `ALU_SLL; end
-                            `INST_SLTI : begin work_unit <= ALU; alu_control <= `ALU_SLT; end
-                            `INST_SLTIU: begin work_unit <= ALU; alu_control <= `ALU_SLTU; end
-                            `INST_XORI : begin work_unit <= ALU; alu_control <= `ALU_XOR; end
-                            `INST_ORI  : begin work_unit <= ALU; alu_control <= `ALU_OR; end
-                            `INST_ANDI : begin work_unit <= ALU; alu_control <= `ALU_AND; end
-                            `INST_SRLI : begin work_unit <= ALU; alu_control <= `ALU_SRL; end
-                            `INST_SRAI : begin work_unit <= ALU; alu_control <= `ALU_SRA; end
-                            `INST_ADDIW: if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_ADD; end
-                            `INST_SLLIW: if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SLL; end
-                            `INST_SRLIW: if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SRL; end
-                            `INST_SRAIW: if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SRA; end
+                            `INST_ADDI   : begin work_unit <= ALU; alu_control <= `ALU_ADD; end
+                            `INST_SLLI   : begin work_unit <= ALU; alu_control <= `ALU_SLL; end
+                            `INST_SLTI   : begin work_unit <= ALU; alu_control <= `ALU_SLT; end
+                            `INST_SLTIU  : begin work_unit <= ALU; alu_control <= `ALU_SLTU; end
+                            `INST_XORI   : begin work_unit <= ALU; alu_control <= `ALU_XOR; end
+                            `INST_ORI    : begin work_unit <= ALU; alu_control <= `ALU_OR; end
+                            `INST_ANDI   : begin work_unit <= ALU; alu_control <= `ALU_AND; end
+                            `INST_SRLI   : begin work_unit <= ALU; alu_control <= `ALU_SRL; end
+                            `INST_SRAI   : begin work_unit <= ALU; alu_control <= `ALU_SRA; end
+                            `ifdef SUPPORT_B ////////////////////////////////////////////////////
+                            `INST_BCLRI  : begin work_unit <= BMU; bmu_control = `BMU_BCLR; end
+                            `INST_BINVI  : begin work_unit <= BMU; bmu_control = `BMU_BINV; end
+                            `INST_BSETI  : begin work_unit <= BMU; bmu_control = `BMU_BSET; end
+                            `INST_CLZ    : begin work_unit <= BMU; bmu_control = `BMU_CLZ; end
+                            `INST_CPOP   : begin work_unit <= BMU; bmu_control = `BMU_CPOP; end
+                            `INST_CTZ    : begin work_unit <= BMU; bmu_control = `BMU_CTZ; end
+                            `INST_SEXT_B : begin work_unit <= BMU; bmu_control = `BMU_SEXTB; end
+                            `INST_SEXT_H : begin work_unit <= BMU; bmu_control = `BMU_SEXTH; end
+                            `INST_SHFLI  : begin work_unit <= BMU; bmu_control = `BMU_SHFL; end
+                            `INST_BEXTI  : begin work_unit <= BMU; bmu_control = `BMU_BEXT; end
+                            `INST_GREVI  : begin work_unit <= BMU; bmu_control = `BMU_GREV; end
+                            `INST_ORCB   : begin work_unit <= BMU; bmu_control = `BMU_ORCB; end
+                            `INST_RORI   : begin work_unit <= BMU; bmu_control = `BMU_ROR; end
+                            `INST_UNSHFLI: begin work_unit <= BMU; bmu_control = `BMU_UNSHFL; end
+                            `INST_CLZW   : if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_CLZ; end
+                            `INST_CPOPW  : if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_CPOP; end
+                            `INST_CTZW   : if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_CTZ; end
+                            `INST_RORIW  : if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_ROR; end
+                            `INST_SLLIUW : if (XLEN >= 64) begin work_unit <= BMU; bmu_control = `BMU_SLLIUW; end
+                            `endif // SUPPORT_B /////////////////////////////////////////////////
+                            `INST_ADDIW  : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_ADD; end
+                            `INST_SLLIW  : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SLL; end
+                            `INST_SRLIW  : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SRL; end
+                            `INST_SRAIW  : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SRA; end
                             default: begin
                                 `ifdef LOG_CPU_UNKNOWN_INST `ERROR("rv_cpu", ("/STATE_EX/ Unknow instruction op_imm (%b)", {opcode, funct3, imm[31:19]})); `endif
                                 `ifdef LOG_CPU `ERROR("rv_cpu", ("/STATE_EX/ Unknow instruction op_imm (%b)", {opcode, funct3, imm[31:19]})); `endif
@@ -1082,12 +1159,18 @@ always_ff @(posedge clk or posedge reset) begin
                     case (work_unit)
                         ALU: begin
                             rd_data <= alu_result;
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB Writing 0x%0h to rd=%0d", alu_result, rd)); `endif
+                            `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB Writing ALU 0x%0h to rd=%0d", alu_result, rd)); `endif
                         end
+                        `ifdef SUPPORT_B
+                        BMU: begin
+                            rd_data <= bmu_result;
+                            `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB Writing BMU 0x%0h to rd=%0d", bmuu_result, rd)); `endif
+                        end
+                        `endif
                         `ifdef SUPPORT_M
                         MDU: begin
                             rd_data <= mdu_result;
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB Writing 0x%0h to rd=%0d", mdu_result, rd)); `endif
+                            `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB Writing MDU 0x%0h to rd=%0d", mdu_result, rd)); `endif
                         end
                         `endif
                     endcase
