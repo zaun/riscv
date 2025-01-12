@@ -1,69 +1,91 @@
-# How to Contribue
+# How to Contribute
 
-Generally this is an open project. If you want to do somehting, do it and submit a pull request. If you want to check before doing open an issue and ask. Items below are a general to do lists of things that should be done but aren't yet. There is not a proirity to any of these, but some require others as a dependancy. This is not an exsausive list, if you want to add a i2c or spi or any other module, go for it.
+This is an open project, and contributions are highly encouraged! If you want to do something, feel free to submit a pull request. If you want to discuss an idea before working on it, open an issue and ask. Below is a general to-do list of things that need to be done but haven't yet. 
+
+Note: There is no strict priority to these items, but some depend on others. This list is not exhaustive—if you want to add a new feature like I2C, SPI, or any other module, go for it!
+
+---
 
 ## Code
 
-All sumbnitted code should be clear, and easy to follow. This project as a whole is meant for learning, not performance and optimization. That said if you want to optimize something or increase preformance of something that still has clear, and easy to follow code, then please do. Learning easy to understand optimized code is more helpful than learning easy to understand unoptimized code.
+All submitted code should be **clear and easy to follow**. This project is primarily meant for learning, not optimization or performance. However, if you can optimize or improve performance while keeping the code clear and easy to understand, please do so. Learning optimized, easy-to-understand code is better than learning unoptimized, easy-to-understand code.
 
-***For anything new, provide a testbench for it.***
+***For anything new, provide a testbench.***
+
+---
 
 ## Testing
 
-Verify all current modules have a working testbench. These are a high priority and are being activly worked on.
+Verify all current modules have a working testbench. These are high-priority items and are actively being worked on:
 
-- cpu_alu
-- cpu_csr
-- cpu_insdecode
-- cpu_mdu
-- cpu_regfile
-- cpu
-- tl_interface
-- tl_memory
-- tl_switch
-- tl_ul_uart
+- **`cpu_alu`** ✔
+- **`cpu_csr`** ✔
+- **`cpu_insdecode`** ✔
+- **`cpu_mdu`** ✔
+- **`cpu_regfile`**
+- **`cpu`**
+- **`tl_interface`** ✔
+- **`tl_memory`** ✔ 
+- **`tl_switch`**
+- **`tl_ul_uart`** ✔
 
-## Features
+---
 
-### Switch
+## To Do List
 
-- Add TileLink-UH support to the tl_switch in a SUPPORT_TL_UH flag. Be suport to the switch still support UL modules connected to it.
-- Add TileLink-C support to the tl_switch in a SUPPORT_TL_C flag and should not require the SUPPORT_UH support. So caching should work withe UL or UH switch. Be sure the switch still support non-cache aware modules to it.
+### **Switch**
 
-### Memory
+- Add TileLink-UH support to the `tl_switch` in a `SUPPORT_TL_UH` flag. Ensure the switch still supports UL modules connected to it.
+- Add TileLink-C support to the `tl_switch` in a `SUPPORT_TL_C` flag. This should not require the `SUPPORT_TL_UH` flag. The caching mechanism should work with UL or UH switches, while maintaining support for non-cache-aware modules.
 
-- Add TileLink-UH support to the tl_memory in a SUPPORT_TL_UH flag.
-- Add TileLink-C support to the tl_memory in a SUPPORT_TL_C flag and should not require the SUPPORT_UH support. So caching should work withe UL or UH switch.
+---
 
-### Interface
+### **Memory**
 
-- Add TileLink-UH support to the tl_interface in a SUPPORT_TL_UH flag.
-- Add TileLink-C support to the tl_interface in a SUPPORT_TL_C flag and should not require the SUPPORT_UH support. So caching should work withe UL or UH switch.
-- Add a L1 cache for program and a L1 cache for data directly to the tl_interface in a SUPPORT_TL_C flag. The cache should be seamless for any master using the tl_interface.
+- Add TileLink-UH support to the `tl_memory` in a `SUPPORT_TL_UH` flag.
+- Add TileLink-C support to the `tl_memory` in a `SUPPORT_TL_C` flag. This should not require the `SUPPORT_TL_UH` flag. The caching mechanism should work with UL or UH switches.
 
-### Bios
+---
 
-- The bios should be developered to wait for the uart to load a program into memory and execute it.
+### **Interface**
 
-### CPU
+- Add TileLink-UH support to the `tl_interface` in a `SUPPORT_TL_UH` flag.
+- Add TileLink-C support to the `tl_interface` in a `SUPPORT_TL_C` flag. This should not require the `SUPPORT_TL_UH` flag. The caching mechanism should work with UL or UH switches.
+- Add an L1 cache for both program and data to the `tl_interface` in a `SUPPORT_TL_C` flag. The cache should be seamless for any master using the `tl_interface`.
 
-- Add 'b' extension support in a SUPPORT_B flag.
-- Add 'f' extension support in a SUPPORT_F flag. This should build out a new FPU module and should build out real synthizable IEEE 754 support.
-- Add 'd' extension support in a SUPPORT_D flag updating the FPU to support double-presision. Adding the SUPPORT_D should automatically include the SUPPORT_F flag.
+---
 
-### CSR
+### **Bios**
 
-- Finish machine level support
-- Add System level support
-- Add user level support
-- Add 4 XLEN timers with interrupt support. User should set the timer value and it should decrement to 0 once every nanosecond. at 0 it should trigger an interrupt. Maybe have a config register to support decrements but clocks, ns, ms, s, etc.
-- Add 4 XLEN psudo random number generators that create a new number on read. Writing to the rng sets seed for the next read.
+- Develop the BIOS to wait for the UART to load a program into memory and execute it.
 
-### Video
+---
 
-- Create a basic memory mapped frame buffer with back-buffer that outputs a DVI signal. Should have a config register that holds resolution information and a bit to flip the buffer. Looking to support 720 and below resolutions.
-- Add a SUPPORT_RAW flag that adds 24bit RGB outputs for LCD/VGA/others to use.
+### **CPU**
 
-### Anything
+- Add 'B' extension support in a `SUPPORT_B` flag.
+- Add 'F' extension support in a `SUPPORT_F` flag. This should include a new FPU module and support for synthesizable IEEE 754 floating-point operations.
+- Add 'D' extension support in a `SUPPORT_D` flag. Update the FPU to support double-precision. Enabling the `SUPPORT_D` flag should automatically include the `SUPPORT_F` flag.
 
-- Add whatever modules or features you would like. Just put things behind a SUPPORT_* flag so its off by default.
+---
+
+### **CSR**
+
+- Finish machine-level support.
+- Add system-level support.
+- Add user-level support.
+- Add 4 XLEN timers with interrupt support. Users should set the timer value, and it should decrement to 0 at one decrement per nanosecond. At 0, it should trigger an interrupt. A configuration register should allow decrements based on clocks, ns, ms, s, etc.
+- Add 4 XLEN pseudo-random number generators. Writing to the RNG sets the seed for the next read, and reading generates a new random number.
+
+---
+
+### **Video**
+
+- Create a basic memory-mapped frame buffer with a back buffer that outputs a DVI signal. Include a configuration register to store resolution information and a bit to flip the buffer. Support resolutions up to 720p.
+- Add a `SUPPORT_RAW` flag to enable 24-bit RGB outputs for LCD, VGA, or other video output systems.
+
+---
+
+### **Anything**
+
+- Add whatever modules or features you would like! Just ensure new features are wrapped in a `SUPPORT_*` flag so they are disabled by default.

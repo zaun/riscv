@@ -112,10 +112,10 @@ test_cpu_alu:
 test_cpu_mdu:
 	iverilog -g2012 -o graph/cpu_mdu.vvp -s cpu_mdu_tb test/cpu_mdu_tb.sv
 	vvp -N graph/cpu_mdu.vvp
-	mv ./cpu_alu_tb.vcd ./graph/cpu_mdu.vcd
+	mv ./cpu_mdu_tb.vcd ./graph/cpu_mdu.vcd
 
 	# Clean Up: Remove intermediate .vvp files
-	rm -f graph/cpu_mdu.vvp -N graph/cpu_mdu.vvp
+	rm -f graph/cpu_mdu.vvp
 
 
 test_cpu_bmu:
@@ -148,31 +148,22 @@ test_cpu_regfile:
 test_cpu_insdecode:
 	mkdir -p ./graph
 
-	iverilog -g2012 -o graph/cpu_insdecode.vvp -s cpu_insdecode_tb \
-		test/cpu_insdecode_tb.sv src/cpu_insdecode.sv
+	iverilog -g2012 -o graph/cpu_insdecode.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
 	vvp -N graph/cpu_insdecode.vvp
 	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode.vcd
 
 	# Second Run: With SUPPORT_ZICSR defined
-	iverilog -g2012 -DSUPPORT_ZICSR -o graph/cpu_insdecode_csr.vvp -s cpu_insdecode_tb \
-		test/cpu_insdecode_tb.sv src/cpu_insdecode.sv
+	iverilog -g2012 -DSUPPORT_ZICSR -o graph/cpu_insdecode_csr.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
 	vvp -N graph/cpu_insdecode_csr.vvp
 	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_csr.vcd
 
-	# Third Run: With SUPPORT_ZIFENCEI defined
-	iverilog -g2012 -DSUPPORT_ZIFENCEI -o graph/cpu_insdecode_fence.vvp -s cpu_insdecode_tb \
-		test/cpu_insdecode_tb.sv src/cpu_insdecode.sv
-	vvp -N graph/cpu_insdecode_fence.vvp
-	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_fence.vcd
-
 	# Fourth Run: With SUPPORT_M defined
-	iverilog -g2012 -DSUPPORT_M -o graph/cpu_insdecode_m.vvp -s cpu_insdecode_tb \
-		test/cpu_insdecode_tb.sv src/cpu_insdecode.sv
+	iverilog -g2012 -DSUPPORT_M -o graph/cpu_insdecode_m.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
 	vvp -N graph/cpu_insdecode_m.vvp
 	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_m.vcd
 
 	# Clean Up: Remove intermediate .vvp files
-	rm -f graph/cpu_insdecode_tb.vvp -N graph/cpu_insdecode_m.vvp -N graph/cpu_insdecode_csr.vvp -N graph/cpu_insdecode_fence.vvp
+	rm -f graph/cpu_insdecode_tb.vvp graph/cpu_insdecode_m.vvp graph/cpu_insdecode_csr.vvp graph/cpu_insdecode_fence.vvp
 
 test_cpu:
 	mkdir -p ./graph

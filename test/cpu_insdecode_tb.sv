@@ -1,6 +1,8 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
+`include "src/cpu_insdecode.sv"
+
 module cpu_insdecode_tb;
 
     // Testbench Signals
