@@ -147,7 +147,11 @@ test_cpu_csr:
 
 	iverilog -g2012 -o graph/cpu_csr.vvp -s cpu_csr_tb test/cpu_csr_tb.sv
 	vvp -N graph/cpu_csr.vvp
-	mv ./cpu_csr_tb.vcd ./graph/cpu_csr.vcd
+	mv ./cpu_csr_tb.vcd ./graph/cpu_csr_32.vcd
+
+	iverilog -g2012 -DXLEN=64 -o graph/cpu_csr.vvp -s cpu_csr_tb test/cpu_csr_tb.sv
+	vvp -N graph/cpu_csr.vvp
+	mv ./cpu_csr_tb.vcd ./graph/cpu_csr_64.vcd
 
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu_csr.vvp
