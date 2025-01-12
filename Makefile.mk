@@ -175,17 +175,31 @@ test_cpu_insdecode:
 
 	iverilog -g2012 -o graph/cpu_insdecode.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
 	vvp -N graph/cpu_insdecode.vvp
-	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode.vcd
+	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_32.vcd
 
 	# Second Run: With SUPPORT_ZICSR defined
 	iverilog -g2012 -DSUPPORT_ZICSR -o graph/cpu_insdecode_csr.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
 	vvp -N graph/cpu_insdecode_csr.vvp
-	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_csr.vcd
+	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_32_csr.vcd
 
 	# Fourth Run: With SUPPORT_M defined
 	iverilog -g2012 -DSUPPORT_M -o graph/cpu_insdecode_m.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
 	vvp -N graph/cpu_insdecode_m.vvp
-	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_m.vcd
+	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_32_m.vcd
+
+	iverilog -g2012 -DXLEN=64 -o graph/cpu_insdecode.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
+	vvp -N graph/cpu_insdecode.vvp
+	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_64.vcd
+
+	# Second Run: With SUPPORT_ZICSR defined
+	iverilog -g2012 -DXLEN=64 -DSUPPORT_ZICSR -o graph/cpu_insdecode_csr.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
+	vvp -N graph/cpu_insdecode_csr.vvp
+	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_64_csr.vcd
+
+	# Fourth Run: With SUPPORT_M defined
+	iverilog -g2012 -DXLEN=64 -DSUPPORT_M -o graph/cpu_insdecode_m.vvp -s cpu_insdecode_tb test/cpu_insdecode_tb.sv
+	vvp -N graph/cpu_insdecode_m.vvp
+	mv ./cpu_insdecode_tb.vcd ./graph/cpu_insdecode_64_m.vcd
 
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu_insdecode_tb.vvp graph/cpu_insdecode_m.vvp graph/cpu_insdecode_csr.vvp graph/cpu_insdecode_fence.vvp
