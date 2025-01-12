@@ -101,8 +101,6 @@ initial begin
     // Wait for a little bit for things to run
     repeat(10000) @(posedge clk);
 
-    $display("----------------------------------------------------------------");
-
     $finish;
 end
 

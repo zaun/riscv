@@ -84,7 +84,7 @@
 `include "src/defines.sv"
 `include "src/cpu_alu.sv"
 `include "src/cpu_insdecode.sv"
-`include "src/tl_ul_interface.sv"
+`include "src/tl_interface.sv"
 `include "src/cpu_regfile.sv"
 `ifdef SUPPORT_ZICSR
 `include "src/cpu_csr.sv"
@@ -332,7 +332,7 @@ logic                   mem_corrupt;
 
 
 // Instantiate Memory Interface
-tl_ul_interface #(
+tl_interface #(
     .XLEN(XLEN),
     .SID_WIDTH(SID_WIDTH)
 ) mem_if_inst (

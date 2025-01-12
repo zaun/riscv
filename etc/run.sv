@@ -3,20 +3,21 @@
 
 `define DEBUG       // Needed for debug signals
 // `define LOG_UNKNOWN_INST
-`define LOG_CPU
-`define LOG_MEM_INTERFACE
+// `define LOG_CPU
+// `define LOG_MEM_INTERFACE
 // `define LOG_REG
-`define LOG_MEMORY
+// `define LOG_MEMORY
 // `define LOG_CLOCKED
-`define LOG_SWITCH
+// `define LOG_SWITCH
 // `define LOG_UART
 // `define LOG_CSR
 
 // Include necessary modules
-`include "src/tl_ul_switch.sv"
-`include "src/tl_ul_memory.sv"
+`include "src/cpu.sv"
+`include "src/tl_switch.sv"
+`include "src/tl_memory.sv"
 
-module program_runner;
+module cpu_runner;
 
 `ifndef XLEN
 `define XLEN 32
@@ -98,7 +99,6 @@ logic [0:0]             external_nmi;
 
 // ====================================
 // Instantiate the CPU (TileLink Master)
-// The CPU includes the cpu_mem_interface internally with the timing fix.
 // ====================================
 rv_cpu #(
     .XLEN(XLEN),
@@ -143,7 +143,7 @@ rv_cpu #(
 // ====================================
 // Instantiate the TileLink Switch
 // ====================================
-tl_ul_switch #(
+tl_switch #(
     .NUM_INPUTS    (1),
     .NUM_OUTPUTS   (1),
     .XLEN          (XLEN),
@@ -180,7 +180,7 @@ tl_ul_switch #(
     .d_denied   (cpu_tl_d_denied),
 
     // ======================
-    // A Channel - Slaves (Memories)
+    // A Channel - Slaves (Memory)
     // ======================
     .s_a_valid   ({ memory_s_a_valid   }),
     .s_a_ready   ({ memory_s_a_ready   }),
@@ -193,7 +193,7 @@ tl_ul_switch #(
     .s_a_data    ({ memory_s_a_data    }),
 
     // ======================
-    // D Channel - Slaves (Memories)
+    // D Channel - Slaves (Memory)
     // ======================
     .s_d_valid    ({ memory_s_d_valid   }),
     .s_d_ready    ({ memory_s_d_ready   }),
@@ -213,9 +213,9 @@ tl_ul_switch #(
 );
 
 // ====================================
-// Instantiate Mock Memory (with timing fix)
+// Instantiate Mock Memory
 // ====================================
-tl_ul_memory #(
+tl_memory #(
     .XLEN(XLEN),
     .SID_WIDTH(SID_WIDTH),
     .SIZE(65535)
@@ -279,8 +279,8 @@ end
 // Simulation Sequence
 // ====================================
 initial begin
-    $dumpfile("program_runner.vcd");
-    $dumpvars(0, program_runner);
+    $dumpfile("cpu_runner.vcd");
+    $dumpvars(0, cpu_runner);
 
     $display("Loading program...");
     reset = 1;
@@ -299,8 +299,8 @@ initial begin
 
     wait (dbg_halt == 1 || trap == 1);
 
-    // if(dbg_halt == 1) $display("Stop reason: HALT");
-    // if(trap == 1) $display("Stop reason: TRAP");
+    if(dbg_halt == 1) $display("Stop reason: HALT");
+    if(trap == 1) $display("Stop reason: TRAP");
     $display("Number of clock cycles: %00d pc=0x%0h", cycle_count, dbg_pc);
     $display("Memory Contents from 0xFF00 to 0xFFFF:");
     $display("----------------------------------------------------------------");

@@ -2,142 +2,16 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef SUPPORT_ZICSR
 // Tell GCC no to include function prologue and epilogue code
 void trap() __attribute__((noreturn, naked));
-
-// Define the base address of the UART
-#define UART_BASE_ADDR 0x00010000
-
-// Register Offsets
-#define UART_STATUS_REG   0x00
-#define UART_CONFIG_REG   0x04
-#define UART_DATA_REG     0x08
-
-// Status Register Bits
-#define UART_TX_FIFO_EMPTY_BIT  0
-#define UART_TX_FIFO_FULL_BIT   1
-#define UART_RX_FIFO_EMPTY_BIT  2
-#define UART_IRQ_PENDING_BIT    4
-
-// Memory-mapped I/O addresses
-#define UART_STATUS_ADDR   ((volatile uint8_t *)(UART_BASE_ADDR + UART_STATUS_REG))
-#define UART_CONFIG_ADDR   ((volatile uint8_t *)(UART_BASE_ADDR + UART_CONFIG_REG))
-#define UART_DATA_ADDR     ((volatile uint8_t *)(UART_BASE_ADDR + UART_DATA_REG))
-
-/**
- * @brief Checks if the UART Transmit FIFO is full.
- *
- * @return true if TX FIFO is full, false otherwise.
- */
-static inline bool uart_is_tx_full(void) {
-    return ((*UART_STATUS_ADDR) & (1 << UART_TX_FIFO_FULL_BIT)) != 0;
-}
-
-/**
- * @brief Checks if the UART Transmit FIFO is empty.
- *
- * @return true if TX FIFO is full, false otherwise.
- */
-static inline bool uart_is_tx_emptyl(void) {
-    return ((*UART_STATUS_ADDR) & (1 << UART_TX_FIFO_EMPTY_BIT)) != 0;
-}
-
-/**
- * @brief Checks if the UART Receive FIFO is empty.
- *
- * @return true if RX FIFO is empty, false otherwise.
- */
-static inline bool uart_is_rx_empty(void) {
-    return ((*UART_STATUS_ADDR) & (1 << UART_RX_FIFO_EMPTY_BIT)) != 0;
-}
-
-/**
- * @brief Sends a single byte via UART.
- *
- * This function writes a byte to the UART Send Register. It waits until the
- * Transmit FIFO is not full before writing. If the FIFO remains full after
- * a timeout period, the function returns an error.
- *
- * @param byte The byte to send.
- * @return 0 on success, -1 on failure (FIFO full).
- */
-int uart_send(char byte) {
-    // Wait until TX FIFO is not full
-    while (uart_is_tx_full()) { }
-
-    // Write the byte to the Send Register
-    *UART_DATA_ADDR = (uint8_t)byte;
-
-    return 0; // Success
-}
-
-/**
- * @brief Sends a null-terminated string via UART.
- *
- * This function iterates through each character in the input string and sends it via UART
- * using the uart_send function. If the UART transmit FIFO is full for any character,
- * the function returns an error.
- *
- * @param str Pointer to the null-terminated string to send.
- * @return 0 on success, -1 on failure (if any uart_send call fails).
- */
-int uart_send_string(const char *str) {
-    // Iterate through each character until the null terminator is reached
-    while (*str != '\0') {
-        // Send the current character
-        if (uart_send(*str) != 0) {
-            // If uart_send fails, return an error
-            return -1;
-        }
-        // Move to the next character in the string
-        str++;
-    }
-    // All characters sent successfully
-    return 0;
-}
-
-/**
- * @brief Reads a single byte from UART.
- *
- * This function reads a byte from the UART Receive Register. It waits until the
- * Receive FIFO is not empty before reading. If the FIFO remains empty after
- * a timeout period, the function returns an error.
- *
- * @param byte Pointer to store the received byte.
- * @return 0 on success, -1 on failure (FIFO empty).
- */
-int uart_read(char *byte) {
-    // Wait until RX FIFO is not empty
-    while (uart_is_rx_empty()) {
-        // Implement a timeout or other error handling as needed
-        // For simplicity, we'll return an error if FIFO is empty
-        return -1; // Failure: RX FIFO is empty
-    }
-
-    // Read the byte from the Receive Register
-    *byte = (char)(*UART_DATA_ADDR);
-
-    return 0; // Success
-}
-
-/**
- * @brief Clears the UART IRQ.
- *
- * This function clears the IRQ by writing '1' to bit [4] of the Status Register.
- */
-void uart_clear_irq(void) {
-    // Define a volatile pointer to the Status Register
-    volatile uint8_t *status_reg = UART_STATUS_ADDR;
-
-    // Write '1' to bit [4] to clear the IRQ
-    *status_reg = (1 << UART_IRQ_PENDING_BIT);
-}
-
-int done = 0;
+#endif
 
 int main(uintptr_t baseAddress) {
+    #ifdef SUPPORT_ZICSR
     uintptr_t trap_address = (uintptr_t)trap;
     __asm__ volatile("csrw mtvec, %0" :: "r"(trap_address));
+    #endif
 
     // 64-bit aligned address (8 bytes aligned)
     volatile int64_t *locationA = (volatile int64_t *)(baseAddress + 0xFFD0);
@@ -190,19 +64,12 @@ int main(uintptr_t baseAddress) {
     *resultC = -(*resultA);
     *resultD = -(*resultB);
 
-    // uart_send('A');
-    // uart_send('\n');
-    // uart_send_string("Hello world from the UART\n");
-
-
-    // Wait until TX FIFO is not full
-    // while (!uart_is_tx_emptyl()) { }
-
     return 0;
 }
 
+#ifdef SUPPORT_ZICSR
 void trap() {
     __asm__ volatile("mret");
     __builtin_unreachable();
 }
-
+#endif

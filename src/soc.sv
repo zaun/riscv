@@ -3,9 +3,9 @@
 // Include necessary modules
 `include "src/cpu.sv"
 `include "src/tl_ul_bios.sv"
-`include "src/tl_ul_memory.sv"
+`include "src/tl_memory.sv"
 `include "src/tl_ul_output.sv"
-`include "src/tl_ul_switch.sv"
+`include "src/tl_switch.sv"
 `include "src/tl_ul_uart.sv"
 
 
@@ -248,7 +248,7 @@ wire outputs_s_d_denied;
 // ====================================
 // Instantiate the TileLink Switch
 // ====================================
-tl_ul_switch #(
+tl_switch #(
     .NUM_INPUTS    (NUM_INPUTS),
     .NUM_OUTPUTS   (NUM_OUTPUTS),
     .XLEN          (XLEN),
@@ -376,7 +376,7 @@ rv_cpu #(
 // ====================================
 // Instantiate Memory 1
 // ====================================
-tl_ul_memory #(
+tl_memory #(
     .XLEN       (XLEN),
     .SIZE       (16'hFFF),
     .SID_WIDTH  (SID_WIDTH)

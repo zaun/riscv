@@ -88,12 +88,12 @@ run_cpu: asm
 	python etc/scripts/bin_to_sv_mem.py etc/program.bin etc/program.sv etc/program.opcodes -m mock_mem
 	rm etc/*.o etc/program.bin etc/program.opcodes
 
-	iverilog -g2012 $(DEFINES) -o graph/program_runner.vvp -s program_runner \
-		etc/run.sv src/cpu.sv
-	vvp -N graph/program_runner.vvp
-	mv ./program_runner.vcd ./graph/program_runner.vcdram.opcodes
+	iverilog -g2012 $(DEFINES) -o graph/cpu_runner.vvp -s cpu_runner etc/run.sv
+	vvp -N graph/cpu_runner.vvp
+	mv ./cpu_runner.vcd ./graph/cpu_runner.vcd
+	rm -f graph/cpu_runner.vvp
 
-run_soc:
+run_soc: bios
 	iverilog -g2012 $(DEFINES) -o graph/soc_runner.vvp -s soc_runner etc/runsoc.sv
 	vvp -N graph/soc_runner.vvp
 	mv ./soc_runner.vcd ./graph/soc_runner.vcd
@@ -185,33 +185,33 @@ test_cpu:
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu.vvp
 
-test_tl_ul_interface:
+test_tl_interface:
 	mkdir -p ./graph
 
-	iverilog -g2012 -o graph/tl_ul_interface_32.vvp -s tl_ul_interface_tb test/tl_ul_interface_tb.sv
-	vvp -N graph/tl_ul_interface_32.vvp
-	mv ./tl_ul_interface_tb.vcd ./graph/tl_ul_interface_32.vcd
+	iverilog -g2012 -o graph/tl_interface_32.vvp -s tl_interface_tb test/tl_interface_tb.sv
+	vvp -N graph/tl_interface_32.vvp
+	mv ./tl_interface_tb.vcd ./graph/tl_interface_32.vcd
 
-	iverilog -g2012 -DXLEN=64 -o graph/tl_ul_interface_64.vvp -s tl_ul_interface_tb test/tl_ul_interface_tb.sv
-	vvp -N graph/tl_ul_interface_64.vvp
-	mv ./tl_ul_interface_tb.vcd ./graph/tl_ul_interface_64.vcd
+	iverilog -g2012 -DXLEN=64 -o graph/tl_interface_64.vvp -s tl_interface_tb test/tl_interface_tb.sv
+	vvp -N graph/tl_interface_64.vvp
+	mv ./tl_interface_tb.vcd ./graph/tl_interface_64.vcd
 
 	# Clean Up: Remove intermediate .vvp files
-	rm -f graph/tl_ul_interface_32.vvp graph/tl_ul_interface_64.vvp
+	rm -f graph/tl_interface_32.vvp graph/tl_interface_64.vvp
 
-test_tl_ul_memory:
+test_tl_memory:
 	mkdir -p ./graph
 
-	iverilog -g2012 -o graph/tl_ul_memory_32.vvp -s tl_ul_memory_tb test/tl_ul_memory_tb.sv
-	vvp -N graph/tl_ul_memory_32.vvp
-	mv ./tl_ul_memory_tb.vcd ./graph/tl_ul_memory_32.vcd
+	iverilog -g2012 -o graph/tl_memory_32.vvp -s tl_memory_tb test/tl_memory_tb.sv
+	vvp -N graph/tl_memory_32.vvp
+	mv ./tl_memory_tb.vcd ./graph/tl_memory_32.vcd
 
-	iverilog -g2012 -DXLEN=64 -o graph/tl_ul_memory_64.vvp -s tl_ul_memory_tb test/tl_ul_memory_tb.sv
-	vvp -N graph/tl_ul_memory_64.vvp
-	mv ./tl_ul_memory_tb.vcd ./graph/tl_ul_memory_64.vcd
+	iverilog -g2012 -DXLEN=64 -o graph/tl_memory_64.vvp -s tl_memory_tb test/tl_memory_tb.sv
+	vvp -N graph/tl_memory_64.vvp
+	mv ./tl_memory_tb.vcd ./graph/tl_memory_64.vcd
 
 	# Clean Up: Remove intermediate .vvp files
-	rm -f graph/tl_ul_memory_32.vvp graph/tl_ul_memory_64.vvp
+	rm -f graph/tl_memory_32.vvp graph/tl_memory_64.vvp
 
 test_tl_ul_uart:
 	mkdir -p ./graph
@@ -227,15 +227,15 @@ test_tl_ul_uart:
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/tl_ul_uart_32.vvp graph/tl_ul_uart_64.vvp
 
-test_tl_ul_switch:
+test_tl_switch:
 	mkdir -p ./graph
 
-	iverilog -g2012 -o graph/tl_ul_switch.vvp -s tl_ul_switch_tb test/tl_ul_switch_tb.sv
-	vvp -N graph/tl_ul_switch.vvp
-	mv ./tl_ul_switch_tb.vcd ./graph/tl_ul_switch.vcd
+	iverilog -g2012 -o graph/tl_switch.vvp -s tl_switch_tb test/tl_switch_tb.sv
+	vvp -N graph/tl_switch.vvp
+	mv ./tl_switch_tb.vcd ./graph/tl_switch.vcd
 
 	# Clean Up: Remove intermediate .vvp files
-	rm -f graph/tl_ul_switch.vvp
+	rm -f graph/tl_switch.vvp
 
 clean:
 	rm -f synthesis.json
