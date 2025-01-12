@@ -77,8 +77,8 @@ module tl_switch #(
     // ======================
     // Base Addresses for Slaves
     // ======================
-    input  wire [NUM_OUTPUTS*XLEN-1:0]       base_addr,      // 
-    input  wire [NUM_OUTPUTS*XLEN-1:0]       addr_mask       // 
+    input  wire [NUM_OUTPUTS*XLEN-1:0]        base_addr,     // 
+    input  wire [NUM_OUTPUTS*XLEN-1:0]        addr_mask      //
 );
 
 // ======================

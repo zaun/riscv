@@ -16,21 +16,6 @@ All submitted code should be **clear and easy to follow**. This project is prima
 
 ## Cleanup
 
-### Testing
-
-Verify all current modules have a working testbench. These are high-priority items and are actively being worked on:
-
-- **`cpu_alu`** ✔
-- **`cpu_csr`** ✔
-- **`cpu_insdecode`** ✔
-- **`cpu_mdu`** ✔
-- **`cpu_regfile`** ✔
-- **`cpu`** ✔
-- **`tl_interface`** ✔
-- **`tl_memory`** ✔ 
-- **`tl_switch`**
-- **`tl_ul_uart`** ✔
-
 ### src/instructions.sv
 
 The F, D and Q defines are mostly placeholders (copies of the I instruction values) and need to be reviewed and updated to the actual encoding for each instruction.
@@ -39,8 +24,13 @@ The F, D and Q defines are mostly placeholders (copies of the I instruction valu
 
 ## To Do List
 
+### **Testing**
+
+- Update the cpu testbench to run actual riscv-arch-test tests
+
 ### **Switch**
 
+- Add an internal slave for the switch that gives access to the memory map, stats, and other data.
 - Add TileLink-UH support to the `tl_switch` in a `SUPPORT_TL_UH` flag. Ensure the switch still supports UL modules connected to it.
 - Add TileLink-C support to the `tl_switch` in a `SUPPORT_TL_C` flag. This should not require the `SUPPORT_TL_UH` flag. The caching mechanism should work with UL or UH switches, while maintaining support for non-cache-aware modules.
 

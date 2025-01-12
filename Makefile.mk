@@ -106,7 +106,6 @@ include MakefileTests.mk
 TESTS := $(shell grep -E '^[[:space:]]*test_[^:]+:$$' MakefileTests.mk | sed -E 's/^[[:space:]]*//' | cut -d':' -f1 )
 
 test: $(TESTS)
-	echo $(TESTS)
 
 ##
 

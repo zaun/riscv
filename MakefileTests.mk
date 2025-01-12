@@ -159,7 +159,11 @@ test_tl_switch:
 
 	iverilog -g2012 -o graph/tl_switch.vvp -s tl_switch_tb test/tl_switch_tb.sv
 	vvp -N graph/tl_switch.vvp
-	mv ./tl_switch_tb.vcd ./graph/tl_switch.vcd
+	mv ./tl_switch_tb.vcd ./graph/tl_switch_32.vcd
+
+	iverilog -g2012 -DXLEN=64 -o graph/tl_switch.vvp -s tl_switch_tb test/tl_switch_tb.sv
+	vvp -N graph/tl_switch.vvp
+	mv ./tl_switch_tb.vcd ./graph/tl_switch_63.vcd
 
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/tl_switch.vvp
