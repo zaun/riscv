@@ -14,7 +14,9 @@ All submitted code should be **clear and easy to follow**. This project is prima
 
 ---
 
-## Testing
+## Cleanup
+
+### Testing
 
 Verify all current modules have a working testbench. These are high-priority items and are actively being worked on:
 
@@ -28,6 +30,10 @@ Verify all current modules have a working testbench. These are high-priority ite
 - **`tl_memory`** ✔ 
 - **`tl_switch`**
 - **`tl_ul_uart`** ✔
+
+### src/defines.sv
+
+The F, D and Q defines are mostly placeholders (copies of the I instruction values) and need to be reviewed and updated to the actual encoding for each instruction.
 
 ---
 

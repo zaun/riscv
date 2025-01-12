@@ -1,4 +1,4 @@
-# RISCV SoC Project
+# RISC-V SoC Project
 
 This repository contains the System-on-Chip (SoC) design files implemented in SystemVerilog. The project includes various components such as the CPU, memory, peripherals, and interconnect logic. It aims to provide a modular SoC design for embedded applications that is primarily for learning.
 
@@ -6,7 +6,7 @@ This repository contains the System-on-Chip (SoC) design files implemented in Sy
 
 ## Goals for this Project
 
-1. **Learning RISCV, TileLink, and related peripherals.**
+1. **Learning RISC-V, TileLink, and related peripherals.**
 2. **Designing in SystemVerilog.**
 
 This project prioritizes clarity over performance and optimizations, ensuring straightforward, clearly understandable code. It targets students, hobbyists, and junior-level engineers.
@@ -19,7 +19,7 @@ If you're interested in participating, please check the [CONTRIBUTING.md](/docs/
 
 The repository is organized as follows:
 
-- **`docs`**: Contains all documentation and resource files useful to the project, including PDFs related to RISCV, TileLink, FPGA, and general project files like this `README.md`.
+- **`docs`**: Contains all documentation and resource files useful to the project, including PDFs related to RISC-V, TileLink, FPGA, and general project files like this `README.md`.
 - **`etc`**: Files used in the project but not directly related to the design itself, such as simulation runner files, C code for programming, etc.
 - **`src`**: Contains all the SystemVerilog files for the project.
 - **`test`**: Contains all testbench files for the project.
@@ -98,6 +98,13 @@ Testbenches are located in the `test/` folder. Each test has a `make` target:
 
 Example:  
 `make test_tl_memory` simulates `test/test_tl_memory_tb.sv`, generating waveforms (`graph/tl_memory_32.vcd` and `graph/tl_memory_64.vcd`) for all supported configurations.
+
+---
+
+## Useful Links
+
+- [RISC-V ISA list of instructions](https://riscv-software-src.github.io/riscv-unified-db/manual/html/isa/20240411/insts/add.html)
+- [RISC-V Instruction Decoder](https://luplab.gitlab.io/rvcodecjs)
 
 ---
 
