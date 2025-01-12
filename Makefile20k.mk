@@ -1,5 +1,3 @@
 BOARD=tangnano20k
 FAMILY=GW2A-18C
 DEVICE=GW2A-LV18QN88C8/I7
-
-include Makefile.mk
