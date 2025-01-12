@@ -25,13 +25,13 @@
 module cpu_regfile #(
     parameter XLEN = 32  // Data width: 32 or 64 bits
 ) (
-    input  logic            clk,
-    input  logic            reset,
-    input  logic [4:0]      rs1_addr,
-    input  logic [4:0]      rs2_addr,
-    input  logic [4:0]      rd_addr,
-    input  logic [XLEN-1:0] rd_data,
-    input  logic            rd_write_en,
+    input  wire             clk,
+    input  wire             reset,
+    input  wire  [4:0]      rs1_addr,
+    input  wire  [4:0]      rs2_addr,
+    input  wire  [4:0]      rd_addr,
+    input  wire  [XLEN-1:0] rd_data,
+    input  wire             rd_write_en,
     output logic [XLEN-1:0] rs1_data,
     output logic [XLEN-1:0] rs2_data,
 
@@ -102,7 +102,7 @@ always_ff @(posedge clk or posedge reset) begin
 
     `ifdef LOG_REG 
     if (rd_write_en) begin
-        `INFO("cpu_regfile", ("Time %0t: Writing 0x%0h to %0s(x%0d)", $time, rd_data, get_register_name(rd_addr), rd_addr)); 
+        `INFO("cpu_regfile", ("Writing 0x%0h to %0s(x%0d)", rd_data, get_register_name(rd_addr), rd_addr)); 
     end
     `endif
 end

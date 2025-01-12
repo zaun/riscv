@@ -137,10 +137,13 @@ test_cpu_csr:
 test_cpu_regfile:
 	mkdir -p ./graph
 
-	iverilog -g2012 -o graph/cpu_regfile.vvp -s cpu_regfile_tb \
-		test/cpu_regfile_tb.sv src/cpu_regfile.sv
+	iverilog -g2012 -o graph/cpu_regfile.vvp -s cpu_regfile_tb test/cpu_regfile_tb.sv
 	vvp -N graph/cpu_regfile.vvp
-	mv ./cpu_regfile_tb.vcd ./graph/cpu_regfile.vcd
+	mv ./cpu_regfile_tb.vcd ./graph/cpu_regfile_32.vcd
+
+	iverilog -g2012 -DXLEN=64 -o graph/cpu_regfile.vvp -s cpu_regfile_tb test/cpu_regfile_tb.sv
+	vvp -N graph/cpu_regfile.vvp
+	mv ./cpu_regfile_tb.vcd ./graph/cpu_regfile_64.vcd
 
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu_regfile.vvp
