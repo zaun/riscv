@@ -124,7 +124,7 @@ test_cpu_mdu:
 	vvp -N graph/cpu_mdu.vvp
 	mv ./cpu_mdu_tb.vcd ./graph/cpu_mdu_32.vcd
 
-	iverilog -g2012 -DXLEN-64 -o graph/cpu_mdu.vvp -s cpu_mdu_tb test/cpu_mdu_tb.sv
+	iverilog -g2012 -DXLEN=64 -o graph/cpu_mdu.vvp -s cpu_mdu_tb test/cpu_mdu_tb.sv
 	vvp -N graph/cpu_mdu.vvp
 	mv ./cpu_mdu_tb.vcd ./graph/cpu_mdu_64.vcd
 
