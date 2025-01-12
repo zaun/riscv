@@ -44,7 +44,7 @@ The repository is organized as follows:
   - **`tl_ul_output.sv`**: Handles output signals.
 
 - **Utilities**:
-  - **`defines.sv`**: Contains global defines for instruction decoding.
+  - **`instructions.sv`**: Contains global defines for instruction decoding.
   - **`log.sv`**: Provides logging support for debugging.
 
 ---

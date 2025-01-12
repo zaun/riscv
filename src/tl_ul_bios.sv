@@ -5,7 +5,7 @@
  * @module tl_ul_bios
  * @brief TileLink-UL Compliant Memory Module pre-loaded with a BIOS.
  */
- 
+
 `timescale 1ns / 1ps
 `default_nettype none
 

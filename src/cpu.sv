@@ -81,7 +81,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/defines.sv"
+`include "src/instructions.sv"
 `include "src/cpu_alu.sv"
 `include "src/cpu_insdecode.sv"
 `include "src/tl_interface.sv"

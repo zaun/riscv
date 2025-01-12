@@ -31,7 +31,7 @@ Verify all current modules have a working testbench. These are high-priority ite
 - **`tl_switch`**
 - **`tl_ul_uart`** ✔
 
-### src/defines.sv
+### src/instructions.sv
 
 The F, D and Q defines are mostly placeholders (copies of the I instruction values) and need to be reviewed and updated to the actual encoding for each instruction.
 

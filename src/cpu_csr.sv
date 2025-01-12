@@ -1,8 +1,6 @@
-`default_nettype none
-
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 // CSR File Module with Edge-Triggered NMI Handling
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * @module cpu_csr
  * @brief Implements the Control and Status Registers (CSRs) for handling
@@ -32,6 +30,9 @@
  * both standard interrupts and NMIs. Additionally, proper prioritization and
  * handling mechanisms should be implemented to manage NMIs effectively.
  */
+
+`timescale 1ns / 1ps
+`default_nettype none
  
 // CSR Address Definitions
 //*****************************
@@ -115,10 +116,26 @@
 // Custom and Implementation-Defined CSRs
 //*****************************
 // Reserved for custom CSRs: 0xC00 to 0xCFF
-// Example custom CSR definitions:
-// `define CSR_CUSTOM_0   12'hC00;
+// Not currently implimented but planned use
+// `define CSR_CUSTOM_0     12'hC00; // Timer Config 
+//                                   // bits [3:0]   - Timer mode 0 = overflow wrap, 1 = overflow halt
+//                                   //              - When wrap, should be back to the initially written value
+//                                   // bits [7:4]   - Timer IRQ on overflow 0 = enabled, 1 = disabled
+//                                   // bits [9:8]   - Timer 1 speed 00 = cycle, 01 = ns, 10 = ms, 11 = s
+//                                   // bits [11:10] - Timer 2 speed
+//                                   // bits [13:12] - Timer 3 speed
+//                                   // bits [15:14] - Timer 4 speed
+// `define CSR_CUSTOM_1     12'hC01; // Tiemr 1
+// `define CSR_CUSTOM_2     12'hC02; // Timer 2
+// `define CSR_CUSTOM_3     12'hC03; // Timer 3
+// `define CSR_CUSTOM_3     12'hC04; // Timer 4
+// `define CSR_CUSTOM_4     12'hC05; // PRNG 1 - New number on read, write sets seed for next read
+// `define CSR_CUSTOM_5     12'hC06; // PRNG 2
+// `define CSR_CUSTOM_6     12'hC07; // PRNG 3
+// `define CSR_CUSTOM_7     12'hC08; // PRNG 4
+// `define CSR_CUSTOM_8     12'hC09; // 
 // ...
-// `define CSR_CUSTOM_FF  12'hCFF;
+// `define CSR_CUSTOM_FF    12'hCFF; //
 
 // CSR Operation Controls
 `define CSR_RW    3'b000 // 0 Atomic Read/Write CSR

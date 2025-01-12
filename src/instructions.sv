@@ -1,4 +1,5 @@
-// `define LOG
+`ifndef __INSTRUCTIONS__
+`define __INSTRUCTIONS__
 
 // TODO: Verify the F, D and Q extenstions
 
@@ -257,3 +258,5 @@
 `define INST_LUI    10'b0110111 // I Load upper immediate
 `define INST_JAL    10'b1101111 // I Jump and link
 `define INST_JALR   10'b1100111 // I Jump and link register
+
+`endif // __INSTRUCTIONS__
