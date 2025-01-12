@@ -295,6 +295,7 @@ initial begin
     reset = 0;
     $display("Running rv%0di%00s%00s%00s...", `XLEN,
     `ifdef SUPPORT_M "m" `else "" `endif,
+    `ifdef SUPPORT_B "b" `else "" `endif,
     `ifdef SUPPORT_ZICSR "_zicsr" `else "" `endif);
 
     wait (dbg_halt == 1 || trap == 1);

@@ -96,6 +96,7 @@ initial begin
     reset = 0;
     $display("Running SOC rv i%00s%00s%00s...",
     `ifdef SUPPORT_M "m" `else "" `endif,
+    `ifdef SUPPORT_B "b" `else "" `endif,
     `ifdef SUPPORT_ZICSR "_zicsr" `else "" `endif);
 
     // Wait for a little bit for things to run

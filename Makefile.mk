@@ -22,6 +22,12 @@ ifeq ($(SUPPORT_M), 1)
     DEFINES += -DSUPPORT_M
 endif
 
+# Modify ARCH and DEFINES if SUPPORT_M is set
+ifeq ($(SUPPORT_B), 1)
+	ARCH := $(ARCH)_zic64b_zicbom_zicbop
+    DEFINES += -DSUPPORT_B
+endif
+
 # Modify ARCH and DEFINES if SUPPORT_BSUPPORT_ZICSR is set
 ifeq ($(SUPPORT_ZICSR), 1)
 	ARCH := $(ARCH)_zicsr
