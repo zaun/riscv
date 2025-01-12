@@ -85,6 +85,8 @@ asm: etc/main.c
 	riscv64-unknown-elf-objdump -D -b binary -m riscv:$(RV) -M numeric etc/program.bin > etc/program.opcodes
 
 run_cpu: asm
+	mkdir -p ./graph
+
 	python etc/scripts/bin_to_sv_mem.py etc/program.bin etc/program.sv etc/program.opcodes -m mock_mem
 	rm etc/*.o etc/program.bin etc/program.opcodes
 
@@ -94,6 +96,8 @@ run_cpu: asm
 	rm -f graph/cpu_runner.vvp
 
 run_soc: bios
+	mkdir -p ./graph
+
 	iverilog -g2012 $(DEFINES) -o graph/soc_runner.vvp -s soc_runner etc/runsoc.sv
 	vvp -N graph/soc_runner.vvp
 	mv ./soc_runner.vcd ./graph/soc_runner.vcd
@@ -104,21 +108,33 @@ test_cpu_alu:
 
 	iverilog -g2012 -o graph/cpu_alu.vvp -s cpu_alu_tb test/cpu_alu_tb.sv
 	vvp -N graph/cpu_alu.vvp
-	mv ./cpu_alu_tb.vcd ./graph/cpu_alu.vcd
+	mv ./cpu_alu_tb.vcd ./graph/cpu_alu_32.vcd
+
+	iverilog -g2012 -DXLEN=64 -o graph/cpu_alu.vvp -s cpu_alu_tb test/cpu_alu_tb.sv
+	vvp -N graph/cpu_alu.vvp
+	mv ./cpu_alu_tb.vcd ./graph/cpu_alu_64.vcd
 
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu_alu.vvp
 
 test_cpu_mdu:
+	mkdir -p ./graph
+
 	iverilog -g2012 -o graph/cpu_mdu.vvp -s cpu_mdu_tb test/cpu_mdu_tb.sv
 	vvp -N graph/cpu_mdu.vvp
-	mv ./cpu_mdu_tb.vcd ./graph/cpu_mdu.vcd
+	mv ./cpu_mdu_tb.vcd ./graph/cpu_mdu_32.vcd
+
+	iverilog -g2012 -DXLEN-64 -o graph/cpu_mdu.vvp -s cpu_mdu_tb test/cpu_mdu_tb.sv
+	vvp -N graph/cpu_mdu.vvp
+	mv ./cpu_mdu_tb.vcd ./graph/cpu_mdu_64.vcd
 
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu_mdu.vvp
 
 
 test_cpu_bmu:
+	mkdir -p ./graph
+
 	iverilog -g2012 -o graph/cpu_bmu.vvp -s cpu_bmu_tb test/cpu_bmu_tb.sv
 	vvp -N graph/cpu_bmu.vvp
 	mv ./cpu_bmu_tb.vcd ./graph/cpu_bmu.vcd
@@ -127,6 +143,8 @@ test_cpu_bmu:
 	rm -f graph/cpu_bmu.vvp
 
 test_cpu_csr:
+	mkdir -p ./graph
+
 	iverilog -g2012 -o graph/cpu_csr.vvp -s cpu_csr_tb test/cpu_csr_tb.sv
 	vvp -N graph/cpu_csr.vvp
 	mv ./cpu_csr_tb.vcd ./graph/cpu_csr.vcd
