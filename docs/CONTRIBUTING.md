@@ -25,7 +25,7 @@ Verify all current modules have a working testbench. These are high-priority ite
 - **`cpu_insdecode`** ✔
 - **`cpu_mdu`** ✔
 - **`cpu_regfile`** ✔
-- **`cpu`**
+- **`cpu`** ✔
 - **`tl_interface`** ✔
 - **`tl_memory`** ✔ 
 - **`tl_switch`**

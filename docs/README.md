@@ -99,6 +99,8 @@ Testbenches are located in the `test/` folder. Each test has a `make` target:
 Example:  
 `make test_tl_memory` simulates `test/test_tl_memory_tb.sv`, generating waveforms (`graph/tl_memory_32.vcd` and `graph/tl_memory_64.vcd`) for all supported configurations.
 
+Running `make test` will run all existing `test_*` pargets.
+
 ---
 
 ## Useful Links

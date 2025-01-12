@@ -4,20 +4,22 @@
 `define DEBUG // Turn on debugging ports
 // `define LOG
 
-`include "test/mock_memory.sv"
-
-module cpu_tb;
+`include "src/cpu.sv"
+`include "src/tl_memory.sv"
 
 `ifndef XLEN
 `define XLEN 32
 `endif
 
+module cpu_tb;
+`include "test/test_macros.sv"
+
 // ====================================
 // Parameters
 // ====================================
 parameter XLEN = `XLEN;
-parameter SID_WIDTH = 2;          // Source ID length for TileLink
-parameter MEM_SIZE = 4096;   // Memory size (supports addresses up to 0x0FFF)
+parameter SID_WIDTH = 8;    // Source ID length for TileLink
+parameter MEM_SIZE = 4096;  // Memory size (supports addresses up to 0x0FFF)
 
 // ====================================
 // Clock and Reset
@@ -32,33 +34,33 @@ initial begin
 end
 
 // TileLink Signals
-logic              tl_a_valid;
-logic              tl_a_ready;
-logic [2:0]        tl_a_opcode;
-logic [2:0]        tl_a_param;
-logic [2:0]        tl_a_size;
+logic                   tl_a_valid;
+logic                   tl_a_ready;
+logic [2:0]             tl_a_opcode;
+logic [2:0]             tl_a_param;
+logic [2:0]             tl_a_size;
 logic [SID_WIDTH-1:0]   tl_a_source;
-logic [XLEN-1:0]   tl_a_address;
-logic [XLEN/8-1:0] tl_a_mask;
-logic [XLEN-1:0]   tl_a_data;
+logic [XLEN-1:0]        tl_a_address;
+logic [XLEN/8-1:0]      tl_a_mask;
+logic [XLEN-1:0]        tl_a_data;
 
-logic              tl_d_valid;
-logic              tl_d_ready;
-logic [2:0]        tl_d_opcode;
-logic [1:0]        tl_d_param;
-logic [2:0]        tl_d_size;
+logic                   tl_d_valid;
+logic                   tl_d_ready;
+logic [2:0]             tl_d_opcode;
+logic [1:0]             tl_d_param;
+logic [2:0]             tl_d_size;
 logic [SID_WIDTH-1:0]   tl_d_source;
-logic [XLEN-1:0]   tl_d_data;
-logic              tl_d_corrupt;
-logic              tl_d_denied;
+logic [XLEN-1:0]        tl_d_data;
+logic                   tl_d_corrupt;
+logic                   tl_d_denied;
 
 // Debugging
-wire [31:0]        cpu_pc;
-wire [31:0]        cpu_x1;
-wire [31:0]        cpu_x2;
-wire [31:0]        cpu_x3;
-wire               cpu_halt;
-wire               cpu_trap;
+wire [31:0]             cpu_pc;
+wire [31:0]             cpu_x1;
+wire [31:0]             cpu_x2;
+wire [31:0]             cpu_x3;
+wire                    cpu_halt;
+wire                    cpu_trap;
 
 // ====================================
 // Instantiate the CPU (TileLink Master)
@@ -95,47 +97,48 @@ rv_cpu #(
     .tl_d_source(tl_d_source),
     .tl_d_data(tl_d_data),
 
+    .trap(cpu_trap),
+
     // Debug
     .dbg_pc(cpu_pc),
     .dbg_x1(cpu_x1),
     .dbg_x2(cpu_x2),
     .dbg_x3(cpu_x3),
-    .dbg_halt(cpu_halt),
-    .dbg_trap(cpu_trap)
+    .dbg_halt(cpu_halt)
 );
 
 // ====================================
 // Instantiate Mock Memory (with timing fix)
 // ====================================
-mock_memory #(
+tl_memory #(
     .XLEN(XLEN),
     .SID_WIDTH(SID_WIDTH),
-    .MEM_SIZE(MEM_SIZE)
+    .SIZE(MEM_SIZE)
 ) mock_mem (
-    .clk        (clk),
-    .reset      (reset),
+    .clk          (clk),
+    .reset        (reset),
 
     // TileLink A Channel
-    .tl_a_valid (tl_a_valid),
-    .tl_a_ready (tl_a_ready),
-    .tl_a_opcode(tl_a_opcode),
-    .tl_a_param (tl_a_param),
-    .tl_a_size  (tl_a_size),
-    .tl_a_source(tl_a_source),
-    .tl_a_address(tl_a_address),
-    .tl_a_mask  (tl_a_mask),
-    .tl_a_data  (tl_a_data),
+    .tl_a_valid   (tl_a_valid),
+    .tl_a_ready   (tl_a_ready),
+    .tl_a_opcode  (tl_a_opcode),
+    .tl_a_param   (tl_a_param),
+    .tl_a_size    (tl_a_size),
+    .tl_a_source  (tl_a_source),
+    .tl_a_address (tl_a_address),
+    .tl_a_mask    (tl_a_mask),
+    .tl_a_data    (tl_a_data),
 
     // TileLink D Channel
-    .tl_d_valid (tl_d_valid),
-    .tl_d_ready (tl_d_ready),
-    .tl_d_opcode(tl_d_opcode),
-    .tl_d_param (tl_d_param),
-    .tl_d_size  (tl_d_size),
-    .tl_d_source(tl_d_source),
-    .tl_d_data  (tl_d_data),
-    .tl_d_corrupt(tl_d_corrupt),
-    .tl_d_denied(tl_d_denied),
+    .tl_d_valid   (tl_d_valid),
+    .tl_d_ready   (tl_d_ready),
+    .tl_d_opcode  (tl_d_opcode),
+    .tl_d_param   (tl_d_param),
+    .tl_d_size    (tl_d_size),
+    .tl_d_source  (tl_d_source),
+    .tl_d_data    (tl_d_data),
+    .tl_d_corrupt (tl_d_corrupt),
+    .tl_d_denied  (tl_d_denied),
 
     // Debug inputs
     .dbg_corrupt_read_address(),
@@ -143,40 +146,6 @@ mock_memory #(
     .dbg_corrupt_write_address(),
     .dbg_denied_write_address()
 );
-
-// Testbench Control Signals
-integer testCount = 0;
-integer testPass = 0;
-integer testFail = 0;
-
-// Expectation Macro
-`define EXPECT(desc, actual, expected) \
-    if ((actual) === (expected)) begin \
-        $display("  == PASS == %s (Value: 0x%0h)", desc, actual); \
-        testPass = testPass + 1; \
-    end else begin \
-        $display("  == FAIL == %s (Expected: 0x%0h, Got: 0x%0h)", desc, expected, actual); \
-        testFail = testFail + 1; \
-    end
-
-`define TEST(desc) \
-    testCount = testCount + 1; \
-    $display("\n[CPU] Test %0d: %s", testCount, desc);
-
-`define FINISH \
-    begin \
-        $display("\n===================================="); \
-        $display("Total Tests Run:    %0d", testCount); \
-        $display("Tests Passed:       %0d", testPass); \
-        $display("Tests Failed:       %0d", testFail); \
-        if (testFail > 0) begin \
-            $display("== Some tests FAILED. ==============\n"); \
-            $stop; \
-        end else begin \
-            $display("== All tests PASSED successfully. ==\n"); \
-            $finish; \
-        end \
-    end
 
 // ====================================
 // Simulation Sequence
@@ -196,7 +165,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("lui x2, 0x12345, addi x2, x2, 0x678: Load 0x12345678 into x2")
+    `TEST("rv_cpu", "lui x2, 0x12345, addi x2, x2, 0x678: Load 0x12345678 into x2")
     // Loading 0x12345678 into x2
     // Instruction: lui x2, 0x12345 -> 0x12345137
     mock_mem.memory['h0000] = 8'h37;
@@ -234,7 +203,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("lb x2, 0x11(x0): Load byte x2 with 0x56 (positive) from address 0x0011(x0)")
+    `TEST("rv_cpu", "lb x2, 0x11(x0): Load byte x2 with 0x56 (positive) from address 0x0011(x0)")
     // Instruction: lb x2, 0x11(x0) -> 0x01100103
     mock_mem.memory['h0000] = 8'h03;
     mock_mem.memory['h0001] = 8'h01;
@@ -262,7 +231,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("lb x3, 0x12(x0): Load byte x3 with 0xF6 (negative) from address 0x0012(x0)")
+    `TEST("rv_cpu", "lb x3, 0x12(x0): Load byte x3 with 0xF6 (negative) from address 0x0012(x0)")
     // Instruction: lb x3, 0x12(x0) -> 0x01200183
     mock_mem.memory['h0000] = 8'h83;
     mock_mem.memory['h0001] = 8'h01;
@@ -290,7 +259,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("lbu x2, 0x11(x0): Load byte x2 with 0xF6 from address 0x0011(x0)")
+    `TEST("rv_cpu", "lbu x2, 0x11(x0): Load byte x2 with 0xF6 from address 0x0011(x0)")
     // Instruction: lbu x2, 0x11(x0) -> 0x01104103
     mock_mem.memory['h0000] = 8'h03;
     mock_mem.memory['h0001] = 8'h41;
@@ -318,7 +287,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("lh x3, 0x10(x0): Load half-word x3 with 0x5678 from address 0x0010(x0)")
+    `TEST("rv_cpu", "lh x3, 0x10(x0): Load half-word x3 with 0x5678 from address 0x0010(x0)")
     // Instruction: lh x3, 0x10(x0) -> 0x01001183
     mock_mem.memory['h0000] = 8'h83;
     mock_mem.memory['h0001] = 8'h11;
@@ -347,7 +316,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("lhu x3, 0x10(x0): Load half-word x3 with 0x5678 from address 0x0010(x0)")
+    `TEST("rv_cpu", "lhu x3, 0x10(x0): Load half-word x3 with 0x5678 from address 0x0010(x0)")
     // Instruction: lhu x3, 0x10(x0) -> 0x01005183
     mock_mem.memory['h0000] = 8'h83;
     mock_mem.memory['h0001] = 8'h51;
@@ -376,7 +345,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("lw x1, 0x10(x0): Load x1 with 0x12345678 from address 0x0010(x0)")
+    `TEST("rv_cpu", "lw x1, 0x10(x0): Load x1 with 0x12345678 from address 0x0010(x0)")
     // Instruction: lw x1, 0x10(x0) -> 0x01002083
     mock_mem.memory['h0000] = 8'h83;
     mock_mem.memory['h0001] = 8'h20;
@@ -413,7 +382,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("sb x2, 0(x1): Store a byte from x2 into the memory address stored in x1")
+    `TEST("rv_cpu", "sb x2, 0(x1): Store a byte from x2 into the memory address stored in x1")
     // Loading 0x00000050 into x1
     // Instruction: addi x1, x0 0x50 -> 0x05000093
     mock_mem.memory['h0000] = 8'h93;
@@ -471,7 +440,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("sb x2, 0(x1): Store a half-word from x2 into the memory address stored in x1")
+    `TEST("rv_cpu", "sb x2, 0(x1): Store a half-word from x2 into the memory address stored in x1")
     // Loading 0x00000050 into x1
     // Instruction: addi x1, x0 0x50 -> 0x05000093
     mock_mem.memory['h0000] = 8'h93;
@@ -529,7 +498,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("sb x2, 0(x1): Store a word from x2 into the memory address stored in x1")
+    `TEST("rv_cpu", "sb x2, 0(x1): Store a word from x2 into the memory address stored in x1")
     // Loading 0x00000050 into x1
     // Instruction: addi x1, x0 0x50 -> 0x05000093
     mock_mem.memory['h0000] = 8'h93;
@@ -592,7 +561,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BEQ taken when x1 == x2")
+    `TEST("rv_cpu", "BEQ taken when x1 == x2")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -651,7 +620,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BEQ not taken when x1 != x2")
+    `TEST("rv_cpu", "BEQ not taken when x1 != x2")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -710,7 +679,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BNE not taken when x1 == x2")
+    `TEST("rv_cpu", "BNE not taken when x1 == x2")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -770,7 +739,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BNE taken when x1 != x2")
+    `TEST("rv_cpu", "BNE taken when x1 != x2")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -829,7 +798,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BLT not taken when x1 == x2")
+    `TEST("rv_cpu", "BLT not taken when x1 == x2")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -888,7 +857,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BLT not taken when x1 > x2 (x2 signed)")
+    `TEST("rv_cpu", "BLT not taken when x1 > x2 (x2 signed)")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -953,7 +922,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BLT taken when x1 < x2 (x1 signed)")
+    `TEST("rv_cpu", "BLT taken when x1 < x2 (x1 signed)")
 
     // Load Instructions
     // lui x1, 0xFFFFF   -> 0xFFFFF0B7
@@ -1018,7 +987,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BLTU not taken when x1 == x2")
+    `TEST("rv_cpu", "BLTU not taken when x1 == x2")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -1077,7 +1046,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BLTU taken when x1 < x2 (x2 unsigned)")
+    `TEST("rv_cpu", "BLTU taken when x1 < x2 (x2 unsigned)")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -1142,7 +1111,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BLTU not taken when x1 > x2 (x1 unsigned)")
+    `TEST("rv_cpu", "BLTU not taken when x1 > x2 (x1 unsigned)")
 
     // Load Instructions
     // lui x1, 0xFFFFF   -> 0xFFFFF0B7
@@ -1207,7 +1176,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BGE taken when x1 == x2")
+    `TEST("rv_cpu", "BGE taken when x1 == x2")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -1266,7 +1235,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BGE taken when x1 > x2 (x2 signed)")
+    `TEST("rv_cpu", "BGE taken when x1 > x2 (x2 signed)")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -1331,7 +1300,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BGE not taken when x1 < x2 (x1 signed)")
+    `TEST("rv_cpu", "BGE not taken when x1 < x2 (x1 signed)")
 
     // Load Instructions
     // lui x1, 0xFFFFF   -> 0xFFFFF0B7
@@ -1396,7 +1365,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BLTU taken when x1 == x2")
+    `TEST("rv_cpu", "BLTU taken when x1 == x2")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -1455,7 +1424,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BGEU taken when x1 < x2 (x2 unsigned)")
+    `TEST("rv_cpu", "BGEU taken when x1 < x2 (x2 unsigned)")
 
     // Load Instructions
     // addi x1, x0, 0x50   -> 0x05000093
@@ -1520,7 +1489,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("BGEU taken when x1 > x2 (x1 unsigned)")
+    `TEST("rv_cpu", "BGEU taken when x1 > x2 (x1 unsigned)")
 
     // Load Instructions
     // lui x1, 0xFFFFF   -> 0xFFFFF0B7
@@ -1587,7 +1556,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("Mini program - set the stack pointer, jump, make room on stack, store item on stack)")
+    `TEST("rv_cpu", "Mini program - set the stack pointer, jump, make room on stack, store item on stack)")
 
     mock_mem.memory['h0000] = 8'h93; // addi x1,x0,1
     mock_mem.memory['h0001] = 8'h00;
