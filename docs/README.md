@@ -1,6 +1,6 @@
 # RISC-V SoC Project
 
-This repository contains the System-on-Chip (SoC) design files implemented in SystemVerilog. The project includes various components such as the CPU, memory, peripherals, and interconnect logic. It aims to provide a modular SoC design for embedded applications that is primarily for learning.
+This repository contains a RISC-V System-on-Chip (SoC) design files implemented in SystemVerilog. The project includes various components such as the CPU, memory, peripherals, and interconnect logic. It aims to provide a modular SoC design for embedded applications that is primarily for learning.
 
 ---
 
