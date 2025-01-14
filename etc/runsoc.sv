@@ -7,7 +7,7 @@
 // `define LOG_REG
 // `define LOG_BIOS
 // `define LOG_MEMORY
-// `define LOG_MMIO
+`define LOG_MMIO
 // `define LOG_CLOCKED
 // `define LOG_SWITCH
 // `define LOG_UART
@@ -100,7 +100,7 @@ initial begin
     `ifdef SUPPORT_ZICSR "_zicsr" `else "" `endif);
 
     // Wait for a little bit for things to run
-    repeat(10000) @(posedge clk);
+    repeat(100000) @(posedge clk);
 
     $finish;
 end

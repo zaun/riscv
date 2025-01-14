@@ -46,54 +46,16 @@ parameter CLK_FREQ_MHZ  = 27;
 // LEDs
 // ====================================
 logic [5:0] leds;
-assign LED[0]   = ~leds[0];
-assign LED[3:1] = ~test[2:0];
-assign LED[4]   = ~slow_clk;
-assign LED[5]   = ~led_toggle;
-
-// LED Heartbeat
-// 1 sec on, 1 sec off. 0.5Hz
-reg [25:0] counter;
-reg        led_toggle;
-localparam integer MAX_COUNT_HEARTBEAT = CLK_FREQ_MHZ * 1000000;
-always @(posedge CLK or posedge reset) begin
-    if (reset) begin
-        counter     <= 26'd0;
-        led_toggle  <= 1'b0;
-    end else if (counter >= (MAX_COUNT_HEARTBEAT - 1)) begin
-        counter     <= 26'd0;
-        led_toggle  <= ~led_toggle;
-    end else begin
-        counter <= counter + 25'd1;
-    end
-end
+assign LED   = ~leds;
 
 // ====================================
 // Clock and Reset
 // ====================================
 
-// Clock Divider Registers
-reg [25:0] clk_divider = 25'd0;
-reg slow_clk = 1'b0;
-
 wire clk;
 wire reset;
 
-// 0.25 sec on, 0.25 sec off. 2Hz
-localparam integer MAX_COUNT_SLOWCLOCK = (CLK_FREQ_MHZ * 1000000) / 4;
-always @(posedge CLK or posedge reset) begin
-    if (reset) begin
-        clk_divider     <= 26'd0;
-        slow_clk  <= 1'b0;
-    end else if (clk_divider >= (MAX_COUNT_SLOWCLOCK - 1)) begin
-        clk_divider     <= 26'd0;
-        slow_clk  <= ~slow_clk;
-    end else begin
-        clk_divider <= clk_divider + 25'd1;
-    end
-end
-
-assign clk   = slow_clk;
+assign clk   = CLK;
 assign reset = BTN_S1;
 
 // ====================================
