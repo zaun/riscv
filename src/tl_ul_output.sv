@@ -268,33 +268,62 @@ always @(posedge clk or posedge reset) begin
                             end
                         end
                         3'b001: begin // half-word
-                            if (count_wstrb_bits(req_wstrb) == 2 &&
-                                ((req_wstrb[0] && req_wstrb[1]) ||
-                                (req_wstrb[2] && req_wstrb[3]) ||
-                                (XLEN >= 64 && req_wstrb[4] && req_wstrb[5]) ||
-                                (XLEN >= 64 && req_wstrb[6] && req_wstrb[7])))
-                            begin
-                                register[req_address[1] * 16 +: 16] <= req_wdata[15:0];
-                                `ifdef LOG_MMIO `LOG("mmio", ("/PROCESS/ Half-Word Byte req_address=0x%00h, req_wdata=0x%00h", req_address, req_wdata)); `endif
-                            end else begin
-                                `ifdef LOG_MMIO `ERROR("mmio", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
-                                resp_opcode <= TL_ACCESS_ACK_ERROR;
-                                resp_denied <= 1'b1;
-                                resp_param  <= 2'b10; // Error param
+                            if (XLEN == 32) begin
+                                if (count_wstrb_bits(req_wstrb) == 2 &&
+                                    ((req_wstrb[0] && req_wstrb[1]) ||
+                                    (req_wstrb[2] && req_wstrb[3])))
+                                begin
+                                    register[req_address[1] * 16 +: 16] <= req_wdata[15:0];
+                                    `ifdef LOG_MMIO `LOG("mmio", ("/PROCESS/ Half-Word Byte req_address=0x%00h, req_wdata=0x%00h", req_address, req_wdata)); `endif
+                                end else begin
+                                    `ifdef LOG_MMIO `ERROR("mmio", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
+                                    resp_opcode <= TL_ACCESS_ACK_ERROR;
+                                    resp_denied <= 1'b1;
+                                    resp_param  <= 2'b10; // Error param
+                                end
+                            end else if (XLEN == 64) begin
+                                if (count_wstrb_bits(req_wstrb) == 2 &&
+                                    ((req_wstrb[0] && req_wstrb[1]) ||
+                                    (req_wstrb[2] && req_wstrb[3]) ||
+                                    (req_wstrb[4] && req_wstrb[5]) ||
+                                    (req_wstrb[6] && req_wstrb[7])))
+                                begin
+                                    register[req_address[1] * 16 +: 16] <= req_wdata[15:0];
+                                    `ifdef LOG_MMIO `LOG("mmio", ("/PROCESS/ Half-Word Byte req_address=0x%00h, req_wdata=0x%00h", req_address, req_wdata)); `endif
+                                end else begin
+                                    `ifdef LOG_MMIO `ERROR("mmio", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
+                                    resp_opcode <= TL_ACCESS_ACK_ERROR;
+                                    resp_denied <= 1'b1;
+                                    resp_param  <= 2'b10; // Error param
+                                end
                             end
                         end
                         3'b010: begin // word
-                            if (count_wstrb_bits(req_wstrb) == 4 &&
-                                ((req_wstrb[0] && req_wstrb[1] && req_wstrb[2] && req_wstrb[3]) ||
-                                (XLEN >= 64 && req_wstrb[4] && req_wstrb[5] && req_wstrb[6] && req_wstrb[7])))
-                            begin
-                                register[req_address[1:0] * 32 +: 32] <= req_wdata[31:0];
-                                `ifdef LOG_MMIO `LOG("mmio", ("/PROCESS/ WRITE Word req_address=0x%00h, req_wdata=0x%00h", req_address, req_wdata)); `endif
-                            end else begin
-                                `ifdef LOG_MMIO `ERROR("mmio", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
-                                resp_opcode <= TL_ACCESS_ACK_ERROR;
-                                resp_denied <= 1'b1;
-                                resp_param  <= 2'b10; // Error param
+                            if (XLEN == 32) begin
+                                if (count_wstrb_bits(req_wstrb) == 4 &&
+                                    ((req_wstrb[0] && req_wstrb[1] && req_wstrb[2] && req_wstrb[3])))
+                                begin
+                                    register[req_address[1:0] * 32 +: 32] <= req_wdata[31:0];
+                                    `ifdef LOG_MMIO `LOG("mmio", ("/PROCESS/ WRITE Word req_address=0x%00h, req_wdata=0x%00h", req_address, req_wdata)); `endif
+                                end else begin
+                                    `ifdef LOG_MMIO `ERROR("mmio", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
+                                    resp_opcode <= TL_ACCESS_ACK_ERROR;
+                                    resp_denied <= 1'b1;
+                                    resp_param  <= 2'b10; // Error param
+                                end
+                            end else if (XLEN == 64) begin
+                                if (count_wstrb_bits(req_wstrb) == 4 &&
+                                    ((req_wstrb[0] && req_wstrb[1] && req_wstrb[2] && req_wstrb[3]) ||
+                                    (req_wstrb[4] && req_wstrb[5] && req_wstrb[6] && req_wstrb[7])))
+                                begin
+                                    register[req_address[1:0] * 32 +: 32] <= req_wdata[31:0];
+                                    `ifdef LOG_MMIO `LOG("mmio", ("/PROCESS/ WRITE Word req_address=0x%00h, req_wdata=0x%00h", req_address, req_wdata)); `endif
+                                end else begin
+                                    `ifdef LOG_MMIO `ERROR("mmio", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
+                                    resp_opcode <= TL_ACCESS_ACK_ERROR;
+                                    resp_denied <= 1'b1;
+                                    resp_param  <= 2'b10; // Error param
+                                end
                             end
                         end
                         3'b011: if (XLEN >= 64) begin // double-word
