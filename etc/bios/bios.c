@@ -23,11 +23,11 @@ void delay(uint32_t ms) {
 }
 
 int main() {
-    volatile uint8_t *output = (volatile uint8_t *)(OUTPUT_ADDRESS);
-    *output = 0 - 1;
+    // volatile uint8_t *output = (volatile uint8_t *)(OUTPUT_ADDRESS);
+    // *output = 0 - 1;
 
     while(1) {
-        *output = *output - 1;
+        // *output = *output - 1;
 
         delay(1);
     }

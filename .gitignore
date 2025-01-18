@@ -11,6 +11,8 @@ etc/bios/bios.opcodes
 
 # FPGA Bitstream
 out.fs
+bitstream.json
+synthesis.json
 
 # macOS random
 .DS_Store

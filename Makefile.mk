@@ -34,11 +34,27 @@ ifeq ($(SUPPORT_ZICSR), 1)
     DEFINES += -DSUPPORT_ZICSR
 endif
 
+all:
+	@echo "################################################################################"
+	@echo "#                                                                              #"
+	@echo "#                             RISC-V SoC Project                               #"
+	@echo "#                                                                              #"
+	@echo "################################################################################"
+	@echo ""
+	@echo "make soc ................... Build a SoC with CPU, TL switch, memory, bios, UART"
+	@echo "                             and output LEDs"
+	@echo "make soc2 .................. Build a SoC with CPU, memory and debugging LEDs"
+	@echo "make load .................. Load the built SoC to the FPGA"
+	@echo ""
+	@echo "make test .................. Run all testbenches"
+	@echo "make run_cpu ............... Simulate the cpu in iverilog"
+	@echo "make run_soc ............... Simulate the soc in iverilog"
+
 ##
-# Board
+# SOC Build 1
 ##
 
-all: bios out.fs
+soc: bios out
 
 # Compile a C program in riscv asm
 bios: etc/main.c
@@ -54,19 +70,54 @@ bios: etc/main.c
 
 
 # Synthesis
-synthesis.json: src/soc.sv
+synthesis: src/soc.sv
 	yosys -p "read_verilog -sv src/soc.sv; synth_gowin -top top -json synthesis.json"
 
 # Place and Route
-bitstream.json: synthesis.json
+bitstream: synthesis
 	nextpnr-himbaechel -q --json synthesis.json --write bitstream.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=etc/boards/${BOARD}.cst
 
 # Generate Bitstream
-out.fs: bitstream.json
+out: bitstream
 	gowin_pack -d ${FAMILY} -o out.fs bitstream.json
 
+##
+# SOC Build 2
+##
+
+soc2: bios2 out2
+
+# Compile a C program in riscv asm
+bios2: etc/main.c
+	echo $(ARCH)
+	riscv64-unknown-elf-gcc $(DEFINES) -c -fPIC -march=$(ARCH) -mabi=$(ABI) -nostartfiles -nostdlib -o etc/bios/start.o etc/bios/start.S
+	riscv64-unknown-elf-gcc $(DEFINES) -c -fPIC -march=$(ARCH) -mabi=$(ABI) -nostartfiles -nostdlib -o etc/bios/bios.o etc/bios/bios.c
+	riscv64-unknown-elf-ld -m $(MACHINE) -o etc/bios/program.o etc/bios/start.o etc/bios/bios.o
+	riscv64-unknown-elf-objcopy -O binary etc/bios/program.o etc/bios/bios.bin
+	riscv64-unknown-elf-objdump -D -b binary -m riscv:$(RV) -M numeric etc/bios/bios.bin > etc/bios/bios.opcodes
+	hexdump -v -e '1/1 "%02x\n"' etc/bios/bios.bin | \
+	awk 'BEGIN {desired=255} {print; count++} END {for(i=count+1;i<=desired;i++) print "00"}' > etc/bios/bios.hex
+	rm etc/bios/*.o
+
+
+# Synthesis
+synthesis2: src/soc_simple.sv
+	yosys -p "read_verilog -sv src/soc_simple.sv; synth_gowin -top top -json synthesis.json"
+
+# Place and Route
+bitstream2: synthesis2
+	nextpnr-himbaechel -q --json synthesis.json --write bitstream.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=etc/boards/${BOARD}.cst
+
+# Generate Bitstream
+out2: bitstream2
+	gowin_pack -d ${FAMILY} -o out.fs bitstream.json
+
+##
+# Develompent
+##
+
 # Program Board
-load: out.fs
+load:
 	openFPGALoader -b ${BOARD} out.fs -f
 
 ##

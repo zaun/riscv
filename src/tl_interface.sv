@@ -114,7 +114,7 @@ module tl_interface #(
     input  wire                 tl_d_corrupt,
     input  wire                 tl_d_denied,
 
-    output wire [2:0]           test
+    output wire [5:0]           test
 );
 
 // Local parameters for TileLink A-channel opcodes
@@ -129,17 +129,17 @@ localparam [2:0] TL_D_ACCESS_ACK_ERROR        = 3'b111;  // Acknowledge access w
 
 localparam DEFAULT_PARAM                      = 3'b000;  // Default TL param
 
-reg [2:0] test_reg;
-assign test = test_reg;
+reg [5:0] test_reg;
+assign test = {cpu_ready, cpu_ack, test_reg[3:0]};
 
 // FSM States
 typedef enum logic [2:0] {
-    IDLE,
-    SEND_REQ,
-    REQ_ACK,
-    WAIT_RESP,
-    WRITE_RDATA,
-    COMPLETE
+    IDLE        = 3'b000,
+    SEND_REQ    = 3'b001,
+    REQ_ACK     = 3'b010,
+    WAIT_RESP   = 3'b011,
+    WRITE_RDATA = 3'b100,
+    COMPLETE    = 3'b101
 } state_t;
 state_t current_state, next_state;
 
@@ -205,7 +205,7 @@ always_ff @(posedge clk or posedge reset) begin
         cpu_ack          <= 1'b0;
         cpu_denied       <= 1'b0;
         cpu_corrupt      <= 1'b0;
-        test_reg <= 3'b000;
+        test_reg         <= 6'b100000;
         read_data_hold   <= {XLEN{1'b0}};
     end else begin
         // `ifdef LOG_MEM_INTERFACE `LOG("tl_interface", ("ack=%0b cpu_valid=%0b cpu_rdata=%0h cpu_denied=%0b cpu_corrupt=%0b", cpu_ack, cpu_valid, cpu_rdata, cpu_denied, cpu_corrupt)); `endif
@@ -217,9 +217,10 @@ always_ff @(posedge clk or posedge reset) begin
         case (current_state)
             IDLE: begin
                 // Reset outputs
+                cpu_ack       <= 1'b0;
+                cpu_rdata     <= 1'b0;
                 cpu_denied    <= 1'b0;
                 cpu_corrupt   <= 1'b0;
-                cpu_rdata     <= 1'b0;
                 cpu_valid     <= 1'b0;
 
                 if (cpu_ready && ~cpu_ack) begin
@@ -235,7 +236,7 @@ always_ff @(posedge clk or posedge reset) begin
                     next_state  <= SEND_REQ;
 
                     if (~cpu_read) begin
-                        test_reg <= 3'b111;
+                        test_reg <= 6'b000001;
                         case (cpu_size)
                             3'b000: begin // Store Byte (SB - 8bits)
                                 // Addresses from the CPU are byte aligned for byte
@@ -315,13 +316,13 @@ always_ff @(posedge clk or posedge reset) begin
                         endcase
                     end
                 end else begin
-                    test_reg <= 3'b101;
+                    test_reg <= 6'b000010;
                     next_state <= IDLE;
                 end
             end
 
             SEND_REQ: begin
-                test_reg <= 3'b011;
+                test_reg <= 6'b000100;
 
                 // Resend TileLink A Channel request until tl_a_ready is asserted
                 tl_a_opcode  <= req_read ? TL_A_GET_OPCODE : TL_A_PUT_FULL_DATA_OPCODE;
@@ -337,7 +338,7 @@ always_ff @(posedge clk or posedge reset) begin
 
             REQ_ACK: begin
                 if (tl_a_ready) begin
-                 // test_reg <= 3'b011;
+                    test_reg <= 6'b001000;
                     `ifdef LOG_MEM_INTERFACE
                         if (req_read) begin
                             `LOG("tl_interface", ("Sending TileLink A Channel GET request accepted - Address: 0x%h", req_address));
@@ -356,7 +357,7 @@ always_ff @(posedge clk or posedge reset) begin
             WAIT_RESP: begin
                 cpu_ack    <= 1'b0;
                 if (tl_d_valid) begin
-                 // test_reg <= 3'b100;
+                    test_reg <= 6'b010000;
                     tl_d_ready <= 1'b1; // Acknowledge the response
                     `ifdef LOG_MEM_INTERFACE `LOG("tl_interface", ("Received TileLink D Channel response - Opcode: %0b, Data: 0x%h, tl_d_denied=%0b, tl_d_corrupt=%0b", tl_d_opcode, tl_d_data, tl_d_denied, tl_d_corrupt)); `endif
 
@@ -410,7 +411,7 @@ always_ff @(posedge clk or posedge reset) begin
             end
 
             WRITE_RDATA: begin
-             // test_reg <= 3'b101;
+                test_reg <= 6'b100000;
                 `ifdef LOG_MEM_INTERFACE `LOG("tl_interface", ("Assigning read data to CPU - 0x%h denied=%0d corrupt=%0d", read_data_hold, do_cpu_denied || do_retry_max, do_cpu_corrupt)); `endif
                 cpu_ack      <= 1'b0;
                 if (req_read) begin
@@ -425,7 +426,7 @@ always_ff @(posedge clk or posedge reset) begin
             end
 
             COMPLETE: begin
-             // test_reg <= 3'b110;
+             // test_reg <= 6'b000110;
                 `ifdef LOG_MEM_INTERFACE `LOG("tl_interface", ("Memory operation complete, valid signals asserted")); `endif
                 do_retry_max   <= 1'b0;
                 do_cpu_denied  <= 1'b0;

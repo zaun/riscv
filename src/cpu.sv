@@ -139,7 +139,7 @@ module rv_cpu #(
 
     // Signals
     output wire                  trap,
-    output wire [2:0]            test
+    output wire [5:0]            test
 
     `ifdef DEBUG
     // Debug output
@@ -155,13 +155,13 @@ localparam WSTRB_WIDTH = XLEN / 8; // Number of bytes for mem write mask
 
 // State Definitions
 typedef enum logic [3:0] {
-    STATE_RESET,     // CPU is rest eithe by the user or some fault
-    STATE_IF,        // Instruction Fetch
-    STATE_ID,        // Instruction Decode
-    STATE_EX,        // Execute
-    STATE_MEM,       // Memory Access
-    STATE_WB,        // Write Back
-    STATE_TRAP       // Trap Handling
+    STATE_RESET = 4'b0000,  // CPU is rest eithe by the user or some fault
+    STATE_IF    = 4'b0001,  // Instruction Fetch
+    STATE_ID    = 4'b0010,  // Instruction Decode
+    STATE_EX    = 4'b0011,  // Execute
+    STATE_MEM   = 4'b0100,  // Memory Access
+    STATE_WB    = 4'b0101,  // Write Back
+    STATE_TRAP  = 4'b0111   // Trap Handling
     `ifdef SUPPORT_M
     ,STATE_MUL_DIV   // Multiplication and Division Operations
     `endif
@@ -194,13 +194,14 @@ trap_cause_t trap_cause;
 logic [XLEN-1:0] pc;
 logic [31:0]     instr;
 logic            halt;
-logic [2:0]      test_reg;
+logic [5:0]      test_cpu_reg;
+logic [5:0]      test_interface_reg;
 logic            trap_reg;
 logic            if_wait;  // instruction loading,
 logic            mem_wait; // memory loading
 
 assign trap = trap_reg;
-// assign test = test_reg;
+assign test = { mem_ready, mem_ack, if_wait, state[2:0] };
 
 // Instruction Decoder Signals
 logic [6:0]      opcode;
@@ -391,7 +392,7 @@ tl_interface #(
     .tl_d_corrupt(tl_d_corrupt),
     .tl_d_denied (tl_d_denied),
 
-    .test        (test)
+    .test        (test_interface_reg)
 );
 
 `ifdef SUPPORT_ZICSR
@@ -469,45 +470,59 @@ cpu_csr #(
 logic [XLEN-1:0] trap_vector;
 
 // CPU State Machine
-always_ff @(posedge clk or posedge reset) begin
+always_ff @(posedge clk) begin
     if (reset) begin
-        state            <= STATE_RESET;
-        pc               <= START_ADDRESS;
-        rd_write_en      <= 1'b0;           // Regfile Write enabled
-        mem_ready        <= 1'b0;
-        halt             <= 1'b0;
-        test_reg         <= 3'b000;
-        trap_reg         <= 1'b0;
-        trap_cause       <= TRAP_UNKNOWN;
+        state               <= STATE_IF;
+        pc                  <= START_ADDRESS;
+        trap_cause          <= TRAP_UNKNOWN;
+        trap_reg            <= 1'b0;
+        rd_write_en         <= 1'b0;
+        mem_ready           <= 1'b0;
+        halt                <= 1'b0;
+        if_wait             <= 1'b0;
+        mem_wait            <= 1'b0;
+        test_cpu_reg        <= 6'b100000;
         `ifdef SUPPORT_M
-        mdu_start        <= 1'b0;
+        mdu_start           <= 1'b0;
         `endif
         `ifdef SUPPORT_ZICSR
-        csr_reg_write_en <= 1'b0;           // CSR Register Write enabled
-        csr_op_valid     <= 1'b0;
-        trap_state       <= STORE_PC;
+        csr_reg_write_en    <= 1'b0;
+        csr_op_valid        <= 1'b0;
+        trap_state          <= STORE_PC;
         `endif
-        `ifdef LOG_CPU `LOG("rv_cpu", ("Reset (wire), PC=0x%0h", START_ADDRESS)); `endif
+        `ifdef LOG_CPU `LOG("rv_cpu", ("Reset, PC=0x%0h", START_ADDRESS)); `endif
+    end else if (halt) begin
     end else begin
         case (state)
             STATE_RESET: begin
-                pc          <= START_ADDRESS;
-                halt        <= 1'b0;
-                trap_reg    <= 1'b0;
-                if_wait     <= 1'b0;
-                mem_wait    <= 1'b0;
-                state       <= STATE_IF;
-                trap_cause  <= TRAP_UNKNOWN;
-                test_reg    <= 3'b111;
-                `ifdef LOG_CPU `LOG("rv_cpu", ("Reset (state), PC=0x%0h", START_ADDRESS)); `endif
+                state               <= STATE_IF;
+                pc                  <= START_ADDRESS;
+                trap_cause          <= TRAP_UNKNOWN;
+                trap_reg            <= 1'b0;
+                rd_write_en         <= 1'b0;
+                mem_ready           <= 1'b0;
+                halt                <= 1'b0;
+                if_wait             <= 1'b0;
+                mem_wait            <= 1'b0;
+                test_cpu_reg        <= 6'b100000;
+                `ifdef SUPPORT_M
+                mdu_start           <= 1'b0;
+                `endif
+                `ifdef SUPPORT_ZICSR
+                csr_reg_write_en    <= 1'b0;
+                csr_op_valid        <= 1'b0;
+                trap_state          <= STORE_PC;
+                `endif
+                `ifdef LOG_CPU `LOG("rv_cpu", ("Reset, PC=0x%0h", START_ADDRESS)); `endif
             end
 
             STATE_IF: begin
                 if (halt == 1'b1) begin
                     `ifdef LOG_CPU `LOG("rv_cpu", ("HALT detected")); `endif
                     // HALT caught
-                    trap_cause      <= TRAP_HALT;
-                    state           <= STATE_TRAP;
+                    // trap_cause  <= TRAP_HALT;
+                    // state       <= STATE_TRAP;
+                    // test_cpu_reg    <= 6'b101010;
                 end else if (~mem_valid && ~mem_ready && ~if_wait) begin
                     if (pc[1:0] != 2'b00) begin
                         // PC is misaligned
@@ -515,7 +530,7 @@ always_ff @(posedge clk or posedge reset) begin
                         trap_cause  <= TRAP_I_MISALIGNED;
                         state       <= STATE_TRAP;
                     end else begin
-                        test_reg    <= 3'b001;
+                        test_cpu_reg    <= 6'b000001;
                         // Fetch instruction
                         rd_write_en      <= 1'b0; // Regfile Write enabled
                         trap_cause       <= TRAP_UNKNOWN;
@@ -534,20 +549,19 @@ always_ff @(posedge clk or posedge reset) begin
                     end
                 end else if (mem_ready && mem_ack) begin
                     `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_IF/ Fetching instruction acknowledged")); `endif
-                    test_reg    <= 3'b010;
-                    mem_ready <= 1'b0; // Deassert after acknowledgment
+                    test_cpu_reg    <= 6'b000010; // Stuck here
+                    mem_ready       <= 1'b0; // Deassert after acknowledgment
                 end else if (mem_valid) begin
                     // Fetched instruction
-                    test_reg    <= 3'b011;
-                    instr            <= mem_rdata[31:0]; // Instructions are 32 bits
-                    if_wait          <= 1'b0;
-                    state            <= STATE_ID;
+                    test_cpu_reg    <= 6'b000100;
+                    instr           <= mem_rdata[31:0]; // Instructions are 32 bits
+                    if_wait         <= 1'b0;
+                    state           <= STATE_ID;
                     `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_IF/ Fetched instruction from mem_address=0x%0h INS=%31b (0x%00h)", mem_address, mem_rdata[31:0], mem_rdata[31:0])); `endif
                 end
             end
 
             STATE_ID: begin
-                // test_reg    <= 3'b010;
                 // Decode Instruction
                 rs1_addr    <= rs1;
                 rs2_addr    <= rs2;
@@ -556,7 +570,7 @@ always_ff @(posedge clk or posedge reset) begin
             end
 
             STATE_EX: begin
-                // test_reg    <= 3'b011;
+                // test_cpu_reg    <= 6'b001000;
                 `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute opcode=%7b, funct3=%3b, funct7=%7b rd=%5b, rs1=%5b, imm=0x%0h", opcode, funct3, funct7, rd, rs1, imm)); `endif
                 alu_operand_a <= rs1_data;
                 alu_operand_b <= is_op_imm ? imm : rs2_data;
@@ -847,7 +861,7 @@ always_ff @(posedge clk or posedge reset) begin
             `endif // SUPPORT_M /////////////////////////////////////////////////
 
             STATE_MEM: begin
-                // test_reg    <= 3'b100;
+                // test_cpu_reg    <= 6'b010000;
                 // `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_MEM mem_wait=%0b mem_ready=%0b mem_valid=%0b mem_rdata=0x%08h",
                 //         mem_wait, mem_ready, mem_valid, mem_rdata)); `endif
                 // Memory Access
@@ -1150,7 +1164,7 @@ always_ff @(posedge clk or posedge reset) begin
             end
 
             STATE_WB: begin
-                // test_reg    <= 3'b101;
+                // test_cpu_reg    <= 6'b100000;
                 `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB: is_op_imm=%0b is_op=%0b is_lui=%0b is_auipc=%0b rd=%0d alu_result=0x%0h",
                         is_op_imm, is_op, is_lui, is_auipc, rd, alu_result)); `endif
                 // Write Back
@@ -1248,7 +1262,7 @@ always_ff @(posedge clk or posedge reset) begin
             end
 
             STATE_TRAP: begin
-                // test_reg    <= 3'b110;
+                // test_cpu_reg    <= 6'b001111;
                 `ifdef LOG_CPU `WARN("rv_cpu", ("TRAP")); `endif
                 // Handle Exception
                 `ifdef SUPPORT_ZICSR
