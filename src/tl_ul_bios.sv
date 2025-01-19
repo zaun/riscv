@@ -120,7 +120,6 @@ always_comb begin
 end
 
 // Memory array, addresses and offsets.
-(* ram_style = "block" *)
 reg [WIDTH-1:0] memory [0 : (SIZE/(WIDTH/8)) - 1];
 
 localparam int WORD_SHIFT        = $clog2(WIDTH/8);
@@ -145,23 +144,24 @@ reg                         mem_read;       // input set high for read mem op
 reg                         mem_write;      // input set high for read mem op
 reg                         mem_start;      // input set high to start mem op
 reg                         mem_done;       // output will be high when mem op is done
-reg [XLEN-1:0]              mem_data_reg;   // inout memory data register
+reg [XLEN-1:0]              mem_idata_reg;   // input memory data register
+reg [XLEN-1:0]              mem_odata_reg;   // input memory data register
 always_ff @(posedge clk) begin
     if (mem_start && ~mem_done) begin
         if (mem_count < MEM_PARTS) begin
             if (mem_read) begin
-                // Read the current WIDTH bits from memory and place them into the correct position in mem_data_reg
+                // Read the current WIDTH bits from memory and place them into the correct position in mem_odata_reg
                 if (mem_count == 0) begin
-                    `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_data_reg=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, memory[mem_word_addr + mem_count] << (WIDTH * mem_count))); `endif
-                    mem_data_reg <= memory[mem_word_addr + mem_count] << (WIDTH * mem_count);
+                    `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, memory[mem_word_addr + mem_count] << (WIDTH * mem_count))); `endif
+                    mem_odata_reg <= memory[mem_word_addr + mem_count] << (WIDTH * mem_count);
                 end else begin
-                    `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_data_reg=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_data_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count)))); `endif
-                    mem_data_reg <= mem_data_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count));
+                    `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count)))); `endif
+                    mem_odata_reg <= mem_odata_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count));
                 end
             end else if (mem_write) begin
-                // Extract the relevant WIDTH bits from mem_data_reg and write them to the current memory address
-                `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_WRITE/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d part_data=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_data_reg[WIDTH*mem_count +: WIDTH])); `endif
-                memory[mem_word_addr + mem_count] <= mem_data_reg[WIDTH*mem_count +: WIDTH];
+                // Extract the relevant WIDTH bits from mem_odata_reg and write them to the current memory address
+                `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_WRITE/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d part_data=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg[WIDTH*mem_count +: WIDTH])); `endif
+                memory[mem_word_addr + mem_count] <= mem_odata_reg[WIDTH*mem_count +: WIDTH];
             end
 
             // Increment the counter for the next part
@@ -282,6 +282,7 @@ always_ff @(posedge clk or posedge reset) begin
                         state <= FETCH;
                     end else if (mem_done) begin
                         mem_start <= 1'b0;
+                        mem_idata_reg <= mem_odata_reg;
                         state <= PROCESS;
                     end
                 end
@@ -297,37 +298,37 @@ always_ff @(posedge clk or posedge reset) begin
                     case (req_size)
                         3'b000: begin
                             // Byte
-                            resp_data <= {{(XLEN-8){1'b0}}, mem_data_reg[ 8*byte_offset +: 8 ]};
+                            resp_data <= {{(XLEN-8){1'b0}}, mem_odata_reg[ 8*byte_offset +: 8 ]};
                             resp_opcode <= TL_ACCESS_ACK_DATA;
-                            `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-8){1'b0}}, mem_data_reg[ 8*byte_offset +: 8 ]}, req_size)); `endif
+                            `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-8){1'b0}}, mem_odata_reg[ 8*byte_offset +: 8 ]}, req_size)); `endif
                         end
                         3'b001: begin
                             // Halfword
-                            resp_data <= {{(XLEN-16){1'b0}}, mem_data_reg[ 8*byte_offset +: 16 ]};
+                            resp_data <= {{(XLEN-16){1'b0}}, mem_odata_reg[ 8*byte_offset +: 16 ]};
                             resp_opcode <= TL_ACCESS_ACK_DATA;
-                            `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-16){1'b0}}, mem_data_reg[ 8*byte_offset +: 16 ]}, req_size)); `endif
+                            `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-16){1'b0}}, mem_odata_reg[ 8*byte_offset +: 16 ]}, req_size)); `endif
                         end
                         3'b010: begin
                             // Word
-                            resp_data <= {{(XLEN-16){1'b0}}, mem_data_reg[ 8*byte_offset +: 32 ]};
+                            resp_data <= {{(XLEN-16){1'b0}}, mem_odata_reg[ 8*byte_offset +: 32 ]};
                             resp_opcode <= TL_ACCESS_ACK_DATA;
-                            `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-32){1'b0}}, mem_data_reg[ 8*byte_offset +: 32 ]}, req_size)); `endif
+                            `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-32){1'b0}}, mem_odata_reg[ 8*byte_offset +: 32 ]}, req_size)); `endif
                         end
                         3'b011: begin
                             // Double-word
                             if (XLEN >= 64) begin
-                                resp_data  <= mem_data_reg[ 8*byte_offset +: 64 ];
+                                resp_data  <= mem_odata_reg[ 8*byte_offset +: 64 ];
                                 resp_opcode <= TL_ACCESS_ACK_DATA;
-                                `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-64){1'b0}}, mem_data_reg[ 8*byte_offset +: 64 ]}, req_size)); `endif
+                                `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-64){1'b0}}, mem_odata_reg[ 8*byte_offset +: 64 ]}, req_size)); `endif
                             end else begin
                                 resp_data <= {(XLEN){1'b0}};
                                 resp_opcode <= TL_ACCESS_ACK_DATA;
                             end
                         end
                         3'b100: if (XLEN >= 128) begin
-                            resp_data   <= {{(XLEN-128){1'b0}}, mem_data_reg[ 8*byte_offset +: 128 ]};
+                            resp_data   <= {{(XLEN-128){1'b0}}, mem_odata_reg[ 8*byte_offset +: 128 ]};
                             resp_opcode <= TL_ACCESS_ACK_DATA;
-                            `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-128){1'b0}}, mem_data_reg[ 8*byte_offset +: 128 ]}, req_size)); `endif
+                            `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/PROCESS/ READ req_address=%0h, resp_data=%0h req_size=%0b", req_address, {{(XLEN-128){1'b0}}, mem_odata_reg[ 8*byte_offset +: 128 ]}, req_size)); `endif
                         end
                         default: begin
                             resp_data <= {(XLEN){1'b0}};
@@ -343,7 +344,7 @@ always_ff @(posedge clk or posedge reset) begin
                     case (req_size)
                         3'b000: begin // byte
                             if (wstrb_count == 1) begin
-                                mem_data_reg[ 8*byte_offset +: 8 ] <= req_wdata[7:0];
+                                mem_idata_reg[ 8*byte_offset +: 8 ] <= req_wdata[7:0];
                             end else begin
                                 `ifdef LOG_BIOS `ERROR("tl_ul_bios", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
                                 resp_opcode <= TL_ACCESS_ACK_ERROR;
@@ -357,7 +358,7 @@ always_ff @(posedge clk or posedge reset) begin
                                     ((req_wstrb[0] && req_wstrb[1]) ||
                                     (req_wstrb[2] && req_wstrb[3])))
                                 begin
-                                    mem_data_reg[ 8*byte_offset +: 16 ] <= req_wdata[15:0];
+                                    mem_idata_reg[ 8*byte_offset +: 16 ] <= req_wdata[15:0];
 
                                 end else begin
                                     `ifdef LOG_BIOS `ERROR("tl_ul_bios", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
@@ -372,7 +373,7 @@ always_ff @(posedge clk or posedge reset) begin
                                     (req_wstrb[4] && req_wstrb[5]) ||
                                     (req_wstrb[6] && req_wstrb[7])))
                                 begin
-                                    mem_data_reg[ 8*byte_offset +: 16 ] <= req_wdata[15:0];
+                                    mem_idata_reg[ 8*byte_offset +: 16 ] <= req_wdata[15:0];
                                 end else begin
                                     `ifdef LOG_BIOS `ERROR("tl_ul_bios", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
                                     resp_opcode <= TL_ACCESS_ACK_ERROR;
@@ -386,7 +387,7 @@ always_ff @(posedge clk or posedge reset) begin
                                 if (wstrb_count == 4 &&
                                     ((req_wstrb[0] && req_wstrb[1] && req_wstrb[2] && req_wstrb[3])))
                                 begin
-                                    mem_data_reg[ 8*byte_offset +: 32 ] <= req_wdata[31:0];
+                                    mem_idata_reg[ 8*byte_offset +: 32 ] <= req_wdata[31:0];
                                 end else begin
                                     `ifdef LOG_BIOS `ERROR("tl_ul_bios", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
                                     resp_opcode <= TL_ACCESS_ACK_ERROR;
@@ -398,7 +399,7 @@ always_ff @(posedge clk or posedge reset) begin
                                     ((req_wstrb[0] && req_wstrb[1] && req_wstrb[2] && req_wstrb[3]) ||
                                     (req_wstrb[4] && req_wstrb[5] && req_wstrb[6] && req_wstrb[7])))
                                 begin
-                                    mem_data_reg[ 8*byte_offset +: 32 ] <= req_wdata[31:0];
+                                    mem_idata_reg[ 8*byte_offset +: 32 ] <= req_wdata[31:0];
                                 end else begin
                                     `ifdef LOG_BIOS `ERROR("tl_ul_bios", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
                                     resp_opcode <= TL_ACCESS_ACK_ERROR;
@@ -411,7 +412,7 @@ always_ff @(posedge clk or posedge reset) begin
                             if (wstrb_count == 8 &&
                                 (req_wstrb[0] && req_wstrb[1] && req_wstrb[2] && req_wstrb[3] && req_wstrb[4] && req_wstrb[5] && req_wstrb[6] && tl_a_mask[7]))
                             begin
-                                mem_data_reg[ 8*byte_offset +: 64 ] <= req_wdata[63:0];
+                                mem_idata_reg[ 8*byte_offset +: 64 ] <= req_wdata[63:0];
                             end else begin
                                 `ifdef LOG_BIOS `ERROR("tl_ul_bios", ("/PROCESS/ WRITE Alignment Error req_address=%0h, resp_data=%0h req_size=%0b tl_a_mask=%0b", req_address, req_wdata, req_size, tl_a_mask)); `endif
                                 resp_opcode <= TL_ACCESS_ACK_ERROR;
