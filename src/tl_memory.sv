@@ -238,12 +238,8 @@ reg                         mem_write;      // input set high for read mem op
 reg                         mem_start;      // input set high to start mem op
 reg                         mem_done;       // output will be high when mem op is done
 reg [XLEN-1:0]              mem_data_reg;   // inout memory data register
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        mem_count    <= 0;
-        mem_done     <= 0;
-        mem_data_reg <= 0;
-    end else if (mem_start && ~mem_done) begin
+always_ff @(posedge clk) begin
+    if (mem_start && ~mem_done) begin
         if (mem_count < MEM_PARTS) begin
             if (mem_read) begin
                 // Read the current WIDTH bits from memory and place them into the correct position in mem_data_reg
