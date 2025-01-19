@@ -98,7 +98,7 @@ module tl_interface #(
     output reg  [2:0]           tl_a_opcode,    // Operation type
     output reg  [2:0]           tl_a_param,     // Parameters for operation
     output reg  [2:0]           tl_a_size,      // Log2(Bytes per beat)
-    output reg  [SID_WIDTH-1:0] tl_a_source,    // Source ID
+    output wire [SID_WIDTH-1:0] tl_a_source,    // Source ID
     output reg  [XLEN-1:0]      tl_a_address,   // Address
     output reg  [XLEN/8-1:0]    tl_a_mask,      // Write byte mask
     output reg  [XLEN-1:0]      tl_a_data,      // Data for write ops
@@ -188,7 +188,6 @@ endfunction
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         // Initialize all registers on reset
-        current_state    <= IDLE;
         tl_a_valid       <= 1'b0;
         tl_a_opcode      <= 3'b000;
         tl_a_param       <= 3'b000;
@@ -245,43 +244,68 @@ always_ff @(posedge clk or posedge reset) begin
                                 if (count_wstrb_bits(cpu_wstrb) == 1) begin
                                     req_wdata <= { {(XLEN-8){1'b0}}, cpu_wdata[7:0] };
                                 end else begin
-                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU request - invalid mask b%0b", cpu_wstrb)); `endif
+                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU Byte request - invalid mask b%00b", cpu_wstrb)); `endif
                                     // Invalid alignment
                                     do_cpu_denied  <= 1'b1;
                                     read_data_hold <= {XLEN{1'b0}};
                                     next_state     <= WRITE_RDATA;
                                 end
                             end
-                            3'b001: begin // Store Half-Word (SH - 16bits)
+                            3'b001: if (XLEN == 32) begin // Store Half-Word (SH - 16bits)
                                 // Addresses from the CPU are half-word aligned for half-word
                                 // reads, cpu_wstrb is the bytes for the word-aligned address
                                 // so it not needed to determin the cpu_wdata bytes.
                                 if (count_wstrb_bits(cpu_wstrb) == 2 &&
                                     ((cpu_wstrb[0] && cpu_wstrb[1]) ||
-                                    (cpu_wstrb[2] && cpu_wstrb[3]) ||
-                                    (XLEN >= 64 && cpu_wstrb[4] && cpu_wstrb[5]) ||
-                                    (XLEN >= 64 && cpu_wstrb[6] && cpu_wstrb[7])))
+                                    (cpu_wstrb[2] && cpu_wstrb[3])))
                                 begin
-                                    req_wdata <= { {(XLEN-16){1'b0}}, cpu_wdata[7:0], cpu_wdata[15:8] };
+                                    req_wdata <= { {(XLEN-16){1'b0}}, cpu_wdata[15:0] };
                                 end else begin
-                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU request - invalid mask b%0b", cpu_wstrb)); `endif
+                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU Half-Word request - invalid mask b%0b", cpu_wstrb)); `endif
+                                    // Invalid alignment
+                                    do_cpu_denied  <= 1'b1;
+                                    read_data_hold <= {XLEN{1'b0}};
+                                    next_state     <= WRITE_RDATA;
+                                end
+                            end else if (XLEN == 64) begin
+                                if (count_wstrb_bits(cpu_wstrb) == 2 &&
+                                    ((cpu_wstrb[0] && cpu_wstrb[1]) ||
+                                    (cpu_wstrb[2] && cpu_wstrb[3]) ||
+                                    (cpu_wstrb[4] && cpu_wstrb[5]) ||
+                                    (cpu_wstrb[6] && cpu_wstrb[7])))
+                                begin
+                                    req_wdata <= { {(XLEN-16){1'b0}}, cpu_wdata[15:0] };
+                                end else begin
+                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU Half-Word request - invalid mask b%0b", cpu_wstrb)); `endif
                                     // Invalid alignment
                                     do_cpu_denied  <= 1'b1;
                                     read_data_hold <= {XLEN{1'b0}};
                                     next_state     <= WRITE_RDATA;
                                 end
                             end
-                            3'b010: begin // Store Word (SW 32-bits)
+                            3'b010: if (XLEN == 32) begin // Store Word (SW 32-bits)
                                 // Addresses from the CPU are word aligned for word
                                 // reads, cpu_wstrb is the bytes for the word-aligned address
                                 // so it not needed to determin the cpu_wdata bytes.
                                 if (count_wstrb_bits(cpu_wstrb) == 4 &&
-                                    ((cpu_wstrb[0] && cpu_wstrb[1] && cpu_wstrb[2] && cpu_wstrb[3]) ||
-                                    (XLEN >= 64 && cpu_wstrb[4] && cpu_wstrb[5] && cpu_wstrb[6] && cpu_wstrb[7])))
+                                    ((cpu_wstrb[0] && cpu_wstrb[1] && cpu_wstrb[2] && cpu_wstrb[3])))
                                 begin
-                                    req_wdata <= { {(XLEN-32){1'b0}}, cpu_wdata[7:0], cpu_wdata[15:8], cpu_wdata[23:16], cpu_wdata[31:24] };
+                                    req_wdata <= { {(XLEN-32){1'b0}}, cpu_wdata[31:0] };
                                 end else begin
-                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU request - invalid mask b%0b", cpu_wstrb)); `endif
+                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU Word request - invalid mask b%0b", cpu_wstrb)); `endif
+                                    // Invalid alignment
+                                    do_cpu_denied  <= 1'b1;
+                                    read_data_hold <= {XLEN{1'b0}};
+                                    next_state     <= WRITE_RDATA;
+                                end
+                            end else if (XLEN == 64) begin
+                                if (count_wstrb_bits(cpu_wstrb) == 4 &&
+                                    ((cpu_wstrb[0] && cpu_wstrb[1] && cpu_wstrb[2] && cpu_wstrb[3]) ||
+                                    (cpu_wstrb[4] && cpu_wstrb[5] && cpu_wstrb[6] && cpu_wstrb[7])))
+                                begin
+                                    req_wdata <= { {(XLEN-32){1'b0}}, cpu_wdata[31:0] };
+                                end else begin
+                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU Word request - invalid mask b%0b", cpu_wstrb)); `endif
                                     // Invalid alignment
                                     do_cpu_denied  <= 1'b1;
                                     read_data_hold <= {XLEN{1'b0}};
@@ -295,11 +319,9 @@ always_ff @(posedge clk or posedge reset) begin
                                 if (count_wstrb_bits(cpu_wstrb) == 8 &&
                                     (cpu_wstrb[0] && cpu_wstrb[1] && cpu_wstrb[2] && cpu_wstrb[3] && cpu_wstrb[4] && cpu_wstrb[5] && cpu_wstrb[6] && cpu_wstrb[7]))
                                 begin
-                                    req_wdata <= { {(XLEN-64){1'b0}},
-                                                cpu_wdata[7:0], cpu_wdata[15:8], cpu_wdata[23:16], cpu_wdata[31:24],
-                                                cpu_wdata[39:32], cpu_wdata[47:40], cpu_wdata[55:48], cpu_wdata[63:56] };
+                                    req_wdata <= { {(XLEN-64){1'b0}}, cpu_wdata[64:0] };
                                 end else begin
-                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU request - invalid mask b%0b", cpu_wstrb)); `endif
+                                    `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU Double-Word request - invalid mask b%0b", cpu_wstrb)); `endif
                                     // Invalid alignment
                                     do_cpu_denied  <= 1'b1;
                                     read_data_hold <= {XLEN{1'b0}};
@@ -307,7 +329,7 @@ always_ff @(posedge clk or posedge reset) begin
                                 end
                             end
                             default: begin
-                                `ifdef LOG_MEM_INTERFACE `ERROR("tl_interface", ("Captured CPU request - invalid size b%0b", cpu_size)); `endif
+                                `ifdef LOG_MEM_INTERFACE `ERROR("tl_interface", ("Captured CPU Double-Word request - invalid size b%0b", cpu_size)); `endif
                                 // Invalid request size
                                 do_cpu_denied  <= 1'b1;
                                 read_data_hold <= {XLEN{1'b0}};
@@ -378,12 +400,10 @@ always_ff @(posedge clk or posedge reset) begin
                         if (req_read && tl_d_opcode == TL_D_ACCESS_ACK_DATA) begin
                             case (req_size)
                                 3'b000: read_data_hold <= { {(XLEN-8){1'b0}}, tl_d_data[7:0] };
-                                3'b001: read_data_hold <= { {(XLEN-16){1'b0}}, tl_d_data[7:0], tl_d_data[15:8] };
-                                3'b010: read_data_hold <= { {(XLEN-32){1'b0}}, tl_d_data[7:0], tl_d_data[15:8], tl_d_data[23:16], tl_d_data[31:24] };
+                                3'b001: read_data_hold <= { {(XLEN-16){1'b0}}, tl_d_data[15:0] };
+                                3'b010: read_data_hold <= { {(XLEN-32){1'b0}}, tl_d_data[31:0] };
                                 3'b011: if (XLEN >= 64) begin
-                                    read_data_hold <= { {(XLEN-64){1'b0}},
-                                                        tl_d_data[7:0],   tl_d_data[15:8],  tl_d_data[23:16], tl_d_data[31:24],
-                                                        tl_d_data[39:32], tl_d_data[47:40], tl_d_data[55:48], tl_d_data[63:56] };
+                                    read_data_hold <= { {(XLEN-64){1'b0}}, tl_d_data[64:0] };
                                 end
                                 default: read_data_hold <= {XLEN{1'b0}};
                             endcase

@@ -2,7 +2,6 @@
 `default_nettype none
 
 `define DEBUG       // Needed for debug signals
-// `define LOG_UNKNOWN_INST
 // `define LOG_CPU
 // `define LOG_MEM_INTERFACE
 // `define LOG_REG
@@ -17,16 +16,18 @@
 `include "src/tl_switch.sv"
 `include "src/tl_memory.sv"
 
-module cpu_runner;
-
 `ifndef XLEN
 `define XLEN 32
 `endif
+
+module cpu_runner;
+`include "test/test_macros.sv"
 
 // ====================================
 // Parameters
 // ====================================
 parameter XLEN = `XLEN;
+parameter MEM_WIDTH = 16;
 parameter SID_WIDTH = 2;           // Source ID length for TileLink
 
 // ====================================
@@ -217,8 +218,9 @@ tl_switch #(
 // ====================================
 tl_memory #(
     .XLEN(XLEN),
+    .WIDTH(MEM_WIDTH),
     .SID_WIDTH(SID_WIDTH),
-    .SIZE(65535)
+    .SIZE(65520)
 ) mock_mem (
     .clk        (clk),
     .reset      (reset),
@@ -245,20 +247,6 @@ tl_memory #(
     .tl_d_corrupt (memory_s_d_corrupt ),
     .tl_d_denied  (memory_s_d_denied  )
 );
-
-integer addr;
-
-`define DISPLAY_MEM_RANGE_ARRAY(MEM, START_ADDR, END_ADDR) \
-    for (addr = START_ADDR; addr <= END_ADDR; addr = addr + 16) begin \
-        reg [7:0] bytes [0:15]; \
-        integer i; \
-        for (i = 0; i < 16; i = i + 1) begin \
-            bytes[i] = MEM.memory[addr + i]; \
-        end \
-        $display("%04h : %02h %02h %02h %02h | %02h %02h %02h %02h | %02h %02h %02h %02h | %02h %02h %02h %02h", \
-                    addr, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], \
-                    bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]); \
-    end
 
 // ====================================
 // Clock Cycle Counter
@@ -303,12 +291,7 @@ initial begin
     if(dbg_halt == 1) $display("Stop reason: HALT");
     if(trap == 1) $display("Stop reason: TRAP");
     $display("Number of clock cycles: %00d pc=0x%0h", cycle_count, dbg_pc);
-    $display("Memory Contents from 0xFF00 to 0xFFFF:");
-    $display("----------------------------------------------------------------");
-    $display("            0  1  2  3 |  4  5  6  7 |  8  9  A  B |  C  D  E  F");
-    $display("----------------------------------------------------------------");
-    `DISPLAY_MEM_RANGE_ARRAY(mock_mem, 16'hFF00, 16'hFFFF);
-    $display("----------------------------------------------------------------");
+    `DISPLAY_MEM_RANGE_ARRAY(mock_mem, MEM_WIDTH, 16'hFF00, 16'hFFFF);
 
     $finish;
 end

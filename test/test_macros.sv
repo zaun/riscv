@@ -27,7 +27,7 @@ reg test;
 `define FINISH \
     begin \
         test = ~test; \
-        repeat (10000) @(posedge clk); \
+        @(posedge clk); \
         $display("\n+---=[ %00d bits ]=------------------+", `XLEN); \
         $display("|                                  |"); \
         $display("|  Total Tests Run:           %03d  |", testCount); \
@@ -47,15 +47,26 @@ reg test;
         end \
     end
 
+`define GET_BYTE_FROM_MEM(MEM, WIDTH, IDX) MEM[(IDX) / (WIDTH/8)][ 8 * ((IDX) % (WIDTH/8)) +: 8 ]
+`define SET_BYTE_IN_MEM(MEM, WIDTH, IDX, VAL) MEM[(IDX) / (WIDTH/8)][ 8 * ((IDX) % (WIDTH/8)) +: 8 ] = VAL
 
-`define DISPLAY_MEM_RANGE_ARRAY(MEM, START_ADDR, END_ADDR) \
-    for (addr = START_ADDR; addr <= END_ADDR; addr = addr + 16) begin \
-        reg [7:0] bytes [0:15]; \
-        integer i; \
-        for (i = 0; i < 16; i = i + 1) begin \
-            bytes[i] = MEM.memory[addr + i]; \
-        end \
+`define DISPLAY_MEM_RANGE_ARRAY(MEM, WIDTH, START_ADDR, END_ADDR)                   \
+    $display("\n\nMemory dump, memory data width: %0d", WIDTH);                     \
+    $display("----------------------------------------------------------------");   \
+    $display("            0  1  2  3 |  4  5  6  7 |  8  9  A  B |  C  D  E  F");   \
+    $display("----------------------------------------------------------------");   \
+    for (addr = START_ADDR; addr <= END_ADDR; addr = addr + 16) begin               \ 
+        reg [7:0] bytes [0:15];                                                     \
+        integer i;                                                                  \
+        for (i = 0; i < 16; i = i + 1) begin                                        \
+            bytes[i] = MEM.memory[((addr + i) >> $clog2(WIDTH/8))]                  \
+                            [ 8*((addr + i) & ((1 << $clog2(WIDTH/8)) - 1)) +: 8 ]; \
+        end                                                                         \
         $display("%04h : %02h %02h %02h %02h | %02h %02h %02h %02h | %02h %02h %02h %02h | %02h %02h %02h %02h", \
-                 addr, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], \
-                 bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]); \
-    end
+                addr,                                                               \
+                bytes[0], bytes[1], bytes[2], bytes[3],                             \
+                bytes[4], bytes[5], bytes[6], bytes[7],                             \
+                bytes[8], bytes[9], bytes[10], bytes[11],                           \
+                bytes[12], bytes[13], bytes[14], bytes[15]);                        \
+    end                                                                             \
+    $display("----------------------------------------------------------------");

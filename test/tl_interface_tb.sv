@@ -22,6 +22,7 @@ parameter XLEN = `XLEN;
 parameter SID_WIDTH = 2;     // Source ID length for TileLink
 parameter MEM_SIZE = 4096;   // Memory size (supports addresses up to 0x0FFF)
 parameter MAX_RETRIES = 3;   // Maximum number of retry attempts
+parameter MEM_WIDTH = 8;
 
 // ====================================
 // Clock and Reset
@@ -137,6 +138,7 @@ tl_interface #(
 // ====================================
 tl_memory #(
     .XLEN(XLEN),
+    .WIDTH(MEM_WIDTH),
     .SID_WIDTH(SID_WIDTH),
     .SIZE(MEM_SIZE)
 ) mock_mem (
@@ -195,7 +197,7 @@ begin
 
     @(posedge clk);
     wait (cpu_ack == 1'b1);
-    cpu_ready    = 1'b0;    // CPU Request is acknowledged
+    cpu_ready = 1'b0;    // CPU Request is acknowledged
 
     // Wait for CPU to acknowledge the write
     @(posedge clk);
@@ -239,7 +241,7 @@ begin
 
     @(posedge clk);
     wait (cpu_ack == 1'b1);
-    cpu_ready    = 1'b0;    // CPU Request is acknowledged
+    cpu_ready = 1'b0;    // CPU Request is acknowledged
 
     // Wait for CPU to acknowledge the write
     @(posedge clk);
@@ -297,22 +299,22 @@ initial begin
     // Test: Write Bytes to address 0x00...0x0F
     // ====================================
     `TEST("tl_interface", "Write Byte all alignments");
-    WriteData(32'h00, 3'b000, 4'b0001, 8'h11, 0, 0);
-    WriteData(32'h01, 3'b000, 4'b0001, 8'h22, 0, 0);
+    WriteData(32'h00, 3'b000, 4'b0001, 8'h11,  0, 0);
+    WriteData(32'h01, 3'b000, 4'b0001, 8'h22,  0, 0);
     WriteData(32'h02, 3'b000, 4'b0010, 16'h33, 0, 0);
     WriteData(32'h03, 3'b000, 4'b0010, 16'h44, 0, 0);
     WriteData(32'h04, 3'b000, 4'b0100, 24'h55, 0, 0);
     WriteData(32'h05, 3'b000, 4'b0100, 24'h66, 0, 0);
     WriteData(32'h06, 3'b000, 4'b1000, 32'h77, 0, 0);
     WriteData(32'h07, 3'b000, 4'b1000, 32'h88, 0, 0);
-    `EXPECT("Byte at 0x01 is valid", mock_mem.memory['h00], 'h11);
-    `EXPECT("Byte at 0x02 is valid", mock_mem.memory['h01], 'h22);
-    `EXPECT("Byte at 0x03 is valid", mock_mem.memory['h02], 'h33);
-    `EXPECT("Byte at 0x04 is valid", mock_mem.memory['h03], 'h44);
-    `EXPECT("Byte at 0x05 is valid", mock_mem.memory['h04], 'h55);
-    `EXPECT("Byte at 0x06 is valid", mock_mem.memory['h05], 'h66);
-    `EXPECT("Byte at 0x07 is valid", mock_mem.memory['h06], 'h77);
-    `EXPECT("Byte at 0x07 is valid", mock_mem.memory['h07], 'h88);
+    `EXPECT("Byte at 0x01 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h00), 'h11);
+    `EXPECT("Byte at 0x02 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h01), 'h22);
+    `EXPECT("Byte at 0x03 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h02), 'h33);
+    `EXPECT("Byte at 0x04 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h03), 'h44);
+    `EXPECT("Byte at 0x05 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h04), 'h55);
+    `EXPECT("Byte at 0x06 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h05), 'h66);
+    `EXPECT("Byte at 0x07 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h06), 'h77);
+    `EXPECT("Byte at 0x07 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h07), 'h88);
     if (XLEN >=64) begin
     WriteData(32'h08, 3'b000, 8'b00010000, 40'h99, 0, 0);
     WriteData(32'h09, 3'b000, 8'b00010000, 40'hAA, 0, 0);
@@ -322,14 +324,14 @@ initial begin
     WriteData(32'h0D, 3'b000, 8'b01000000, 56'hEE, 0, 0);
     WriteData(32'h0E, 3'b000, 8'b10000000, 64'hFF, 0, 0);
     WriteData(32'h0F, 3'b000, 8'b10000000, 64'hED, 0, 0);
-    `EXPECT("Byte at 0x08 is valid", mock_mem.memory['h08], 'h99);
-    `EXPECT("Byte at 0x09 is valid", mock_mem.memory['h09], 'hAA);
-    `EXPECT("Byte at 0x0A is valid", mock_mem.memory['h0A], 'hBB);
-    `EXPECT("Byte at 0x0B is valid", mock_mem.memory['h0B], 'hCC);
-    `EXPECT("Byte at 0x0C is valid", mock_mem.memory['h0C], 'hDD);
-    `EXPECT("Byte at 0x0D is valid", mock_mem.memory['h0D], 'hEE);
-    `EXPECT("Byte at 0x0E is valid", mock_mem.memory['h0E], 'hFF);
-    `EXPECT("Byte at 0x0F is valid", mock_mem.memory['h0F], 'hED);
+    `EXPECT("Byte at 0x08 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h08), 'h99);
+    `EXPECT("Byte at 0x09 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h09), 'hAA);
+    `EXPECT("Byte at 0x0A is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0A), 'hBB);
+    `EXPECT("Byte at 0x0B is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0B), 'hCC);
+    `EXPECT("Byte at 0x0C is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0C), 'hDD);
+    `EXPECT("Byte at 0x0D is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0D), 'hEE);
+    `EXPECT("Byte at 0x0E is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0E), 'hFF);
+    `EXPECT("Byte at 0x0F is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0F), 'hED);
     end
 
     // ====================================
@@ -340,27 +342,27 @@ initial begin
     WriteData(32'h12, 3'b001, 4'b0011, 16'h3344, 0, 0);
     WriteData(32'h14, 3'b001, 4'b1100, 32'h5566, 0, 0);
     WriteData(32'h16, 3'b001, 4'b1100, 32'h7788, 0, 0);
-    `EXPECT("Byte at 0x11 is valid", mock_mem.memory['h10], 'h22);
-    `EXPECT("Byte at 0x12 is valid", mock_mem.memory['h11], 'h11);
-    `EXPECT("Byte at 0x13 is valid", mock_mem.memory['h12], 'h44);
-    `EXPECT("Byte at 0x14 is valid", mock_mem.memory['h13], 'h33);
-    `EXPECT("Byte at 0x15 is valid", mock_mem.memory['h14], 'h66);
-    `EXPECT("Byte at 0x16 is valid", mock_mem.memory['h15], 'h55);
-    `EXPECT("Byte at 0x17 is valid", mock_mem.memory['h16], 'h88);
-    `EXPECT("Byte at 0x17 is valid", mock_mem.memory['h17], 'h77);
+    `EXPECT("Byte at 0x11 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h10), 'h22);
+    `EXPECT("Byte at 0x12 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h11), 'h11);
+    `EXPECT("Byte at 0x13 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h12), 'h44);
+    `EXPECT("Byte at 0x14 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h13), 'h33);
+    `EXPECT("Byte at 0x15 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h14), 'h66);
+    `EXPECT("Byte at 0x16 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h15), 'h55);
+    `EXPECT("Byte at 0x17 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h16), 'h88);
+    `EXPECT("Byte at 0x17 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h17), 'h77);
     if (XLEN >=64) begin
     WriteData(32'h18, 3'b001, 8'b00110000, 48'h99AA, 0, 0);
     WriteData(32'h1A, 3'b001, 8'b00110000, 48'hBBCC, 0, 0);
     WriteData(32'h1C, 3'b001, 8'b11000000, 64'hDDEE, 0, 0);
     WriteData(32'h1E, 3'b001, 8'b11000000, 64'hFFED, 0, 0);
-    `EXPECT("Byte at 0x18 is valid", mock_mem.memory['h18], 'hAA);
-    `EXPECT("Byte at 0x19 is valid", mock_mem.memory['h19], 'h99);
-    `EXPECT("Byte at 0x1A is valid", mock_mem.memory['h1A], 'hCC);
-    `EXPECT("Byte at 0x1B is valid", mock_mem.memory['h1B], 'hBB);
-    `EXPECT("Byte at 0x1C is valid", mock_mem.memory['h1C], 'hEE);
-    `EXPECT("Byte at 0x1D is valid", mock_mem.memory['h1D], 'hDD);
-    `EXPECT("Byte at 0x1E is valid", mock_mem.memory['h1E], 'hED);
-    `EXPECT("Byte at 0x1F is valid", mock_mem.memory['h1F], 'hFF);
+    `EXPECT("Byte at 0x18 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h18), 'hAA);
+    `EXPECT("Byte at 0x19 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h19), 'h99);
+    `EXPECT("Byte at 0x1A is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1A), 'hCC);
+    `EXPECT("Byte at 0x1B is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1B), 'hBB);
+    `EXPECT("Byte at 0x1C is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1C), 'hEE);
+    `EXPECT("Byte at 0x1D is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1D), 'hDD);
+    `EXPECT("Byte at 0x1E is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1E), 'hED);
+    `EXPECT("Byte at 0x1F is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1F), 'hFF);
     end
 
     `TEST("tl_interface", "Write Half-Words invalid alignments");
@@ -385,25 +387,25 @@ initial begin
     `TEST("tl_interface", "Write Words all alignments");
     WriteData(32'h20, 3'b010, 4'b1111, 32'h11223344, 0, 0);
     WriteData(32'h24, 3'b010, 4'b1111, 32'h55667788, 0, 0);
-    `EXPECT("Byte at 0x21 is valid", mock_mem.memory['h20], 'h44);
-    `EXPECT("Byte at 0x22 is valid", mock_mem.memory['h21], 'h33);
-    `EXPECT("Byte at 0x23 is valid", mock_mem.memory['h22], 'h22);
-    `EXPECT("Byte at 0x24 is valid", mock_mem.memory['h23], 'h11);
-    `EXPECT("Byte at 0x25 is valid", mock_mem.memory['h24], 'h88);
-    `EXPECT("Byte at 0x26 is valid", mock_mem.memory['h25], 'h77);
-    `EXPECT("Byte at 0x27 is valid", mock_mem.memory['h26], 'h66);
-    `EXPECT("Byte at 0x27 is valid", mock_mem.memory['h27], 'h55);
+    `EXPECT("Byte at 0x21 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h20), 'h44);
+    `EXPECT("Byte at 0x22 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h21), 'h33);
+    `EXPECT("Byte at 0x23 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h22), 'h22);
+    `EXPECT("Byte at 0x24 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h23), 'h11);
+    `EXPECT("Byte at 0x25 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h24), 'h88);
+    `EXPECT("Byte at 0x26 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h25), 'h77);
+    `EXPECT("Byte at 0x27 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h26), 'h66);
+    `EXPECT("Byte at 0x27 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h27), 'h55);
     if (XLEN >=64) begin
     WriteData(32'h28, 3'b010, 8'b11110000, 64'h99AABBCC, 0, 0);
     WriteData(32'h2C, 3'b010, 8'b11110000, 64'hDDEEFFED, 0, 0);
-    `EXPECT("Byte at 0x28 is valid", mock_mem.memory['h28], 'hCC);
-    `EXPECT("Byte at 0x29 is valid", mock_mem.memory['h29], 'hBB);
-    `EXPECT("Byte at 0x2A is valid", mock_mem.memory['h2A], 'hAA);
-    `EXPECT("Byte at 0x2B is valid", mock_mem.memory['h2B], 'h99);
-    `EXPECT("Byte at 0x2C is valid", mock_mem.memory['h2C], 'hED);
-    `EXPECT("Byte at 0x2D is valid", mock_mem.memory['h2D], 'hFF);
-    `EXPECT("Byte at 0x2E is valid", mock_mem.memory['h2E], 'hEE);
-    `EXPECT("Byte at 0x2F is valid", mock_mem.memory['h2F], 'hDD);
+    `EXPECT("Byte at 0x28 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h28), 'hCC);
+    `EXPECT("Byte at 0x29 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h29), 'hBB);
+    `EXPECT("Byte at 0x2A is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2A), 'hAA);
+    `EXPECT("Byte at 0x2B is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2B), 'h99);
+    `EXPECT("Byte at 0x2C is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2C), 'hED);
+    `EXPECT("Byte at 0x2D is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2D), 'hFF);
+    `EXPECT("Byte at 0x2E is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2E), 'hEE);
+    `EXPECT("Byte at 0x2F is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2F), 'hDD);
     end
 
     // ====================================
@@ -413,22 +415,22 @@ initial begin
     `TEST("tl_interface", "Write Double-Words all alignments");
     WriteData(32'h30, 3'b011, 8'b11111111, 64'h1122334455667788, 0, 0);
     WriteData(32'h38, 3'b011, 8'b11111111, 64'h99AABBCCDDEEFFED, 0, 0);
-    `EXPECT("Byte at 0x31 is valid", mock_mem.memory['h30], 'h88);
-    `EXPECT("Byte at 0x32 is valid", mock_mem.memory['h31], 'h77);
-    `EXPECT("Byte at 0x33 is valid", mock_mem.memory['h32], 'h66);
-    `EXPECT("Byte at 0x34 is valid", mock_mem.memory['h33], 'h55);
-    `EXPECT("Byte at 0x35 is valid", mock_mem.memory['h34], 'h44);
-    `EXPECT("Byte at 0x36 is valid", mock_mem.memory['h35], 'h33);
-    `EXPECT("Byte at 0x37 is valid", mock_mem.memory['h36], 'h22);
-    `EXPECT("Byte at 0x37 is valid", mock_mem.memory['h37], 'h11);
-    `EXPECT("Byte at 0x38 is valid", mock_mem.memory['h38], 'hED);
-    `EXPECT("Byte at 0x39 is valid", mock_mem.memory['h39], 'hFF);
-    `EXPECT("Byte at 0x3A is valid", mock_mem.memory['h3A], 'hEE);
-    `EXPECT("Byte at 0x3B is valid", mock_mem.memory['h3B], 'hDD);
-    `EXPECT("Byte at 0x3C is valid", mock_mem.memory['h3C], 'hCC);
-    `EXPECT("Byte at 0x3D is valid", mock_mem.memory['h3D], 'hBB);
-    `EXPECT("Byte at 0x3E is valid", mock_mem.memory['h3E], 'hAA);
-    `EXPECT("Byte at 0x3F is valid", mock_mem.memory['h3F], 'h99);
+    `EXPECT("Byte at 0x31 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h30), 'h88);
+    `EXPECT("Byte at 0x32 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h31), 'h77);
+    `EXPECT("Byte at 0x33 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h32), 'h66);
+    `EXPECT("Byte at 0x34 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h33), 'h55);
+    `EXPECT("Byte at 0x35 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h34), 'h44);
+    `EXPECT("Byte at 0x36 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h35), 'h33);
+    `EXPECT("Byte at 0x37 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h36), 'h22);
+    `EXPECT("Byte at 0x37 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h37), 'h11);
+    `EXPECT("Byte at 0x38 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h38), 'hED);
+    `EXPECT("Byte at 0x39 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h39), 'hFF);
+    `EXPECT("Byte at 0x3A is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3A), 'hEE);
+    `EXPECT("Byte at 0x3B is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3B), 'hDD);
+    `EXPECT("Byte at 0x3C is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3C), 'hCC);
+    `EXPECT("Byte at 0x3D is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3D), 'hBB);
+    `EXPECT("Byte at 0x3E is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3E), 'hAA);
+    `EXPECT("Byte at 0x3F is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3F), 'h99);
     end
 
     // ====================================
@@ -518,8 +520,7 @@ initial begin
     // ====================================
     // Finish Testbench
     // ====================================
-    $display("\nTest memory dump:");
-    `DISPLAY_MEM_RANGE_ARRAY(mock_mem, 'h00, 'h3f);
+    `DISPLAY_MEM_RANGE_ARRAY(mock_mem, MEM_WIDTH, 'h00, 'h3f);
     `FINISH;
 end
 

@@ -65,7 +65,7 @@ bios: etc/main.c
 	riscv64-unknown-elf-objcopy -O binary etc/bios/program.o etc/bios/bios.bin
 	riscv64-unknown-elf-objdump -D -b binary -m riscv:$(RV) -M numeric etc/bios/bios.bin > etc/bios/bios.opcodes
 	hexdump -v -e '1/1 "%02x\n"' etc/bios/bios.bin | \
-	awk 'BEGIN {desired=255} {print; count++} END {for(i=count+1;i<=desired;i++) print "00"}' > etc/bios/bios.hex
+	awk 'BEGIN {desired=256} {print; count++} END {for(i=count+1;i<=desired;i++) print "00"}' > etc/bios/bios.hex
 	rm etc/bios/*.o
 
 
@@ -96,7 +96,7 @@ bios2: etc/main.c
 	riscv64-unknown-elf-objcopy -O binary etc/bios/program.o etc/bios/bios.bin
 	riscv64-unknown-elf-objdump -D -b binary -m riscv:$(RV) -M numeric etc/bios/bios.bin > etc/bios/bios.opcodes
 	hexdump -v -e '1/1 "%02x\n"' etc/bios/bios.bin | \
-	awk 'BEGIN {desired=255} {print; count++} END {for(i=count+1;i<=desired;i++) print "00"}' > etc/bios/bios.hex
+	awk 'BEGIN {desired=256} {print; count++} END {for(i=count+1;i<=desired;i++) print "00"}' > etc/bios/bios.hex
 	rm etc/bios/*.o
 
 
@@ -120,6 +120,16 @@ out2: bitstream2
 load:
 	openFPGALoader -b ${BOARD} out.fs -f
 
+# Remove temp files
+clean:
+	rm -f etc/bios/bios.hex
+	rm -f etc/bios/bios.bin
+	rm -f etc/bios/bios.opcodes
+	rm -f out.fs
+	rm -f bitstream.json
+	rm -f synthesis.json
+	rm -rf graph/
+
 ##
 # Develompent
 ##
@@ -137,7 +147,7 @@ asm: etc/main.c
 run_cpu: asm
 	mkdir -p ./graph
 
-	python etc/scripts/bin_to_sv_mem.py etc/program.bin etc/program.sv etc/program.opcodes -m mock_mem
+	python etc/scripts/bin_to_sv_mem.py etc/program.bin etc/program.sv etc/program.opcodes -m mock_mem -x 16
 	rm etc/*.o etc/program.bin etc/program.opcodes
 
 	iverilog -g2012 $(DEFINES) -o graph/cpu_runner.vvp -s cpu_runner etc/run.sv
@@ -163,15 +173,6 @@ include MakefileTests.mk
 TESTS := $(shell grep -E '^[[:space:]]*test_[^:]+:$$' MakefileTests.mk | sed -E 's/^[[:space:]]*//' | cut -d':' -f1 )
 
 test: $(TESTS)
-
-##
-
-clean:
-	rm etc/bios/bios.hex
-	rm etc/bios/bios.bin
-	rm etc/bios/bios.opcodes
-	rm out.fs
-	rm -r graph/
 
 .PHONY: load test $(TESTS)
 
