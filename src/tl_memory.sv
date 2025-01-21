@@ -101,6 +101,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
+`include "src/block_ram.sv"
 `include "src/log.sv"
 
 module tl_memory #(
@@ -192,11 +193,11 @@ reg                 resp_corrupt;
 // Function to calculate maximum address based on access size
 function int max_valid_address(input [2:0] size);
     case (size)
-        3'b000: max_valid_address = SIZE - 1;            // Byte
-        3'b001: max_valid_address = SIZE - 2;            // Halfword
-        3'b010: max_valid_address = SIZE - 4;            // Word
-        3'b011: max_valid_address = SIZE - 8;            // Double-Word
-        3'b100: max_valid_address = SIZE - 16;           // Quad-Word (if XLEN >= 128)
+        3'b000 : max_valid_address = SIZE - 1;            // Byte
+        3'b001 : max_valid_address = SIZE - 2;            // Halfword
+        3'b010 : max_valid_address = SIZE - 4;            // Word
+        3'b011 : max_valid_address = SIZE - 8;            // Double-Word
+        3'b100 : max_valid_address = SIZE - 16;           // Quad-Word (if XLEN >= 128)
         default: max_valid_address = SIZE - 1;
     endcase
 endfunction
@@ -212,8 +213,24 @@ always_comb begin
 end
 
 // Memory array, addresses and offsets.
-(* ram_style = "block" *)
-reg [WIDTH-1:0] memory [0 : (SIZE/(WIDTH/8)) - 1];
+block_ram #(
+    .SIZE           (SIZE),
+    .WIDTH          (WIDTH)
+) block_ram_inst (
+	.clk            (clk),
+	.reset          (reset),
+	.write_en       (block_write_en),
+	.write_address  (block_write_address),
+	.write_data     (block_write_data),
+	.read_address   (block_read_address),
+	.read_data      (block_read_data)
+);
+
+reg                                 block_write_en;
+reg [$clog2(SIZE/(WIDTH/8)) - 1:0]  block_write_address;
+reg [WIDTH-1:0]                     block_write_data;
+reg [$clog2(SIZE/(WIDTH/8)) - 1:0]  block_read_address;
+reg [WIDTH-1:0]                     block_read_data;
 
 localparam int WORD_SHIFT        = $clog2(WIDTH/8);
 localparam int BYTE_OFFSET_WIDTH = (WIDTH > 8) ? $clog2(WIDTH/8) : 1;
@@ -237,24 +254,28 @@ reg                         mem_read;       // input set high for read mem op
 reg                         mem_write;      // input set high for read mem op
 reg                         mem_start;      // input set high to start mem op
 reg                         mem_done;       // output will be high when mem op is done
-reg [XLEN-1:0]              mem_odata_reg;  // output memory data register
-reg [XLEN-1:0]              mem_idata_reg;  // input memory data register
+reg [XLEN-1:0]              mem_idata_reg;   // input memory data register
+reg [XLEN-1:0]              mem_odata_reg;   // input memory data register
 always_ff @(posedge clk) begin
     if (mem_start && ~mem_done) begin
         if (mem_count < MEM_PARTS) begin
             if (mem_read) begin
                 // Read the current WIDTH bits from memory and place them into the correct position in mem_odata_reg
+                block_write_en <= 0;
+                block_read_address <= (mem_word_addr + mem_count);
                 if (mem_count == 0) begin
-                    `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, memory[mem_word_addr + mem_count] << (WIDTH * mem_count))); `endif
-                    mem_odata_reg <= memory[mem_word_addr + mem_count] << (WIDTH * mem_count);
+                    `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%00h", XLEN, WIDTH, mem_word_addr, mem_count, block_read_data << (WIDTH * mem_count))); `endif
+                    mem_odata_reg <= block_read_data << (WIDTH * mem_count);
                 end else begin
-                    `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count)))); `endif
-                    mem_odata_reg <= mem_odata_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count));
+                    `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%00h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg | (block_read_data << (WIDTH * mem_count))); `endif
+                    mem_odata_reg <= mem_odata_reg | (block_read_data << (WIDTH * mem_count));
                 end
             end else if (mem_write) begin
                 // Extract the relevant WIDTH bits from mem_odata_reg and write them to the current memory address
                 `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_WRITE/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d part_data=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg[WIDTH*mem_count +: WIDTH])); `endif
-                memory[mem_word_addr + mem_count] <= mem_idata_reg[WIDTH*mem_count +: WIDTH];
+                block_write_en <= 1;
+                block_write_address <= (mem_word_addr + mem_count);
+                block_write_data <= mem_idata_reg[WIDTH*mem_count +: WIDTH];
             end
 
             // Increment the counter for the next part
@@ -270,6 +291,7 @@ always_ff @(posedge clk) begin
         end
     end else begin
         // When not active, ensure mem_done is deasserted
+        block_write_en <= 0;
         mem_done <= 0;
         mem_count  <= 0;
     end

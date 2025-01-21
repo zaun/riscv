@@ -75,7 +75,7 @@ synthesis: src/soc.sv
 
 # Place and Route
 bitstream: synthesis
-	nextpnr-himbaechel -q --json synthesis.json --write bitstream.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=etc/boards/${BOARD}.cst
+	nextpnr-himbaechel --json synthesis.json --write bitstream.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=etc/boards/${BOARD}.cst
 
 # Generate Bitstream
 out: bitstream
@@ -102,11 +102,11 @@ bios2: etc/main.c
 
 # Synthesis
 synthesis2: src/soc_simple.sv
-	yosys -p "read_verilog -sv src/soc_simple.sv; synth_gowin -top top -json synthesis.json"
+	yosys -q -p "read_verilog -sv src/soc_simple.sv; synth_gowin -top top -json synthesis.json"
 
 # Place and Route
 bitstream2: synthesis2
-	nextpnr-himbaechel -q --json synthesis.json --write bitstream.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=etc/boards/${BOARD}.cst
+	nextpnr-himbaechel --json synthesis.json --write bitstream.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=etc/boards/${BOARD}.cst
 
 # Generate Bitstream
 out2: bitstream2

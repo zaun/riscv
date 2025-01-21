@@ -121,13 +121,14 @@ end
 // Request Tracking Table
 // ======================
 
-logic [NUM_INPUTS_LOG2-1:0]  tracking_entry_master_idx [0:TRACK_DEPTH-1];
-logic [NUM_OUTPUTS_LOG2:0]   tracking_entry_slave_idx  [0:TRACK_DEPTH-1]; // 1 bit larger for invlaid
-logic [SID_WIDTH-1:0]        tracking_entry_source_id  [0:TRACK_DEPTH-1];
-logic                        tracking_entry_complete   [0:TRACK_DEPTH-1];
-logic                        tracking_entry_valid      [0:TRACK_DEPTH-1];
-a_channel_state              tracking_entry_a_state    [0:TRACK_DEPTH-1];
-d_channel_state              tracking_entry_d_state    [0:TRACK_DEPTH-1];
+logic [NUM_INPUTS_LOG2-1:0]  tracking_entry_master_idx [0:TRACK_DEPTH-1]; // Master IDX in request
+logic [NUM_OUTPUTS_LOG2:0]   tracking_entry_slave_idx  [0:TRACK_DEPTH-1]; // Slave IDX in request  - 1 bit larger for invlaid
+logic [SID_WIDTH-1:0]        tracking_entry_source_id  [0:TRACK_DEPTH-1]; // Source ID of request
+logic                        tracking_entry_auto_resp  [0:TRACK_DEPTH-1]; // A router sets high when there should be an atuo-responce
+logic                        tracking_entry_finished   [0:TRACK_DEPTH-1]; // D router sets high when finished
+logic                        tracking_entry_valid      [0:TRACK_DEPTH-1]; // High is entry is valid, Low if not
+a_channel_state              tracking_entry_a_state    [0:TRACK_DEPTH-1]; // Current A channel state
+d_channel_state              tracking_entry_d_state    [0:TRACK_DEPTH-1]; // Current D channel state
 
 // Initialize tracking table
 integer ti;
@@ -136,7 +137,8 @@ initial begin
         tracking_entry_master_idx[ti]  = {NUM_INPUTS_LOG2{1'b0}};
         tracking_entry_slave_idx[ti]   = {NUM_OUTPUTS_LOG2+1{1'b0}};
         tracking_entry_source_id[ti]   = {SID_WIDTH{1'b0}};
-        tracking_entry_complete[ti]    = 1'b0;
+        tracking_entry_auto_resp[ti]   = 1'b0;
+        tracking_entry_finished[ti]    = 1'b0;
         tracking_entry_valid[ti]       = 1'b0;
         tracking_entry_d_state[ti]     = WAIT_SLAVE_RESP;
         tracking_entry_a_state[ti]     = WAIT_SLAVE_READY;
@@ -154,10 +156,21 @@ genvar al_idx;
 generate
 for (al_idx = 0; al_idx < NUM_OUTPUTS; al_idx++) begin : lookup_table
     initial begin
+        `ifdef LOG_SWITCH_MAP
+        int hex_width;
+        string format_str;
+        hex_width = XLEN / 4;
+        format_str = $sformatf("%%0d: 0x%%0%0dX ... 0x%%0%0dX", hex_width, hex_width);
+        `endif
+
         lookup_base_addr[al_idx] = base_addr[al_idx*XLEN +: XLEN];
         // Calculate the top_address for each slave from the base and mask
         lookup_top_addr[al_idx]  = {1'b0, base_addr[al_idx*XLEN +: XLEN]} +
                                    {1'b0, addr_mask[al_idx*XLEN +: XLEN]};
+
+        `ifdef LOG_SWITCH_MAP
+        $display(format_str, al_idx, lookup_base_addr[al_idx][XLEN-1:0], lookup_top_addr[al_idx][XLEN-1:0]);
+        `endif
     end
 end
 endgenerate
@@ -204,9 +217,8 @@ always_ff @(posedge clk or posedge reset) begin
             tracking_entry_master_idx[ti]  <= {NUM_INPUTS_LOG2{1'b0}};
             tracking_entry_slave_idx[ti]   <= {NUM_OUTPUTS_LOG2+1{1'b0}};
             tracking_entry_source_id[ti]   <= {SID_WIDTH{1'b0}};
-            tracking_entry_complete[ti]    <= 1'b0;
+            tracking_entry_auto_resp[ti]   <= 1'b0;
             tracking_entry_valid[ti]       <= 1'b0;
-            tracking_entry_d_state[ti]     <= WAIT_SLAVE_RESP;
             tracking_entry_a_state[ti]     <= WAIT_SLAVE_READY;
         end
     end else begin
@@ -225,14 +237,13 @@ always_ff @(posedge clk or posedge reset) begin
                 case (tracking_entry_a_state[tracking_idx])
                     WAIT_SLAVE_READY: begin
                         // Wait for an open spot
-                        if ((master_slot_idx == -1 && a_valid[master_idx] && ~a_ready[master_idx] && ~tracking_entry_valid[tracking_idx])) begin
+                        if ((master_slot_idx == -1 && a_valid[master_idx] && ~a_ready[master_idx] && ~tracking_entry_valid[tracking_idx] && ~tracking_entry_finished[tracking_idx])) begin
                             // Auto respond denied
                             if (master_slave_idx[master_idx] == {(NUM_OUTPUTS_LOG2+1){1'b1}}) begin
                                 `ifdef LOG_SWITCH `WARN("tl_switch", ("Request from Master %0d tracking at %0h auto denied, invalid slave.", master_idx, tracking_idx)); `endif
                                 tracking_entry_master_idx[tracking_idx] <= master_idx;
                                 tracking_entry_slave_idx[tracking_idx]  <= master_slave_idx[master_idx];
                                 tracking_entry_source_id[tracking_idx]  <= a_source[master_idx*SID_WIDTH +: SID_WIDTH];
-                                tracking_entry_complete[tracking_idx]   <= 1'b1;
                                 tracking_entry_valid[tracking_idx]      <= 1'b1;
 
                                 a_ready[master_idx]                     <= 1'b1;
@@ -247,7 +258,6 @@ always_ff @(posedge clk or posedge reset) begin
                                 tracking_entry_master_idx[tracking_idx] <= master_idx;
                                 tracking_entry_slave_idx[tracking_idx]  <= master_slave_idx[master_idx];
                                 tracking_entry_source_id[tracking_idx]  <= a_source[master_idx*SID_WIDTH +: SID_WIDTH];
-                                tracking_entry_complete[tracking_idx]   <= 1'b0;
                                 tracking_entry_valid[tracking_idx]      <= 1'b1;
                                 a_ready[master_idx]                     <= 1'b1;
 
@@ -286,13 +296,22 @@ always_ff @(posedge clk or posedge reset) begin
                         `ifdef LOG_SWITCH `LOG("tl_switch", ("Request from Master %0d tracking at %0h starting auto denied response.", master_idx, tracking_idx)); `endif
                         a_ready[master_idx] <= 1'b0; // Clear the request Ack
                         tracking_entry_a_state[tracking_idx] <= WAIT_SLAVE_READY;
-                        tracking_entry_d_state[tracking_idx] <= AUTO_RESPOND;
+                        tracking_entry_auto_resp[tracking_idx] <= 1'b1;
                     end
 
                     default: ;
                 endcase
             end
         end
+        
+        // Handle tracking updates
+        for (int tracking_idx = 0; tracking_idx < TRACK_DEPTH; tracking_idx = tracking_idx + 1) begin
+            // Start resetting the tracker
+            if (tracking_entry_valid[tracking_idx] == 1'b1 && tracking_entry_finished[tracking_idx] == 1'b1) begin
+                tracking_entry_valid[tracking_idx] <= 1'b0;
+            end
+        end
+
     end
 end
 
@@ -306,6 +325,11 @@ end;
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
+        // Reset the tracking table
+        for (ti = 0; ti < TRACK_DEPTH; ti = ti + 1) begin
+            tracking_entry_finished[ti] <= 1'b0;
+            tracking_entry_d_state[ti]  <= WAIT_SLAVE_RESP;
+        end
     end else begin
         // Handle Slave responces
         for (int slave_idx = 0; slave_idx < NUM_OUTPUTS; slave_idx++) begin : handle_slave_responces
@@ -339,12 +363,35 @@ always_ff @(posedge clk or posedge reset) begin
                                 end
                             end
 
+                            AUTO_RESPOND: begin
+                                `ifdef LOG_SWITCH `LOG("tl_switch", ("Auto Response to Master %0d tracking at %0h.", tracking_entry_master_idx[tracking_idx], tracking_idx)); `endif
+                                d_valid[tracking_entry_master_idx[tracking_idx]]                         <= 1'b1;
+                                d_opcode[tracking_entry_master_idx[tracking_idx]*3 +: 3]                 <= 3'b111;
+                                d_param[tracking_entry_master_idx[tracking_idx]*2 +: 2]                  <= 3'b00;
+                                d_size[tracking_entry_master_idx[tracking_idx]*3 +: 3]                   <= 3'b000;
+                                d_source[tracking_entry_master_idx[tracking_idx]*SID_WIDTH +: SID_WIDTH] <= tracking_entry_source_id[tracking_idx];
+                                d_data[tracking_entry_master_idx[tracking_idx]*XLEN +: XLEN]             <= {XLEN{1'b0}};
+                                d_corrupt[tracking_entry_master_idx[tracking_idx]]                       <= 1'b0;
+                                d_denied[tracking_entry_master_idx[tracking_idx]]                        <= 1'b1;
+
+                                tracking_entry_d_state[tracking_idx] <= WAIT_AUTO_RESPOND_ACK;
+                            end
+
+                            WAIT_AUTO_RESPOND_ACK: begin
+                                if (d_ready[tracking_entry_master_idx[tracking_idx]]) begin
+                                    `ifdef LOG_SWITCH `LOG("tl_switch", ("Auto Response to Master %0d is acknowleged tracking at %0h.", tracking_entry_master_idx[tracking_idx], tracking_idx)); `endif
+                                    stats_global_responces <= stats_global_responces + 1;
+                                    stats_global_autoresponces <= stats_global_autoresponces + 1;
+                                    tracking_entry_d_state[tracking_idx] <= FINISH;
+                                end
+                            end
+
                             FINISH: begin
                                 // Cleanup, mark the tracking record as invalid so it can be reused
                                 // turn off the slave ack
                                 s_d_ready[slave_idx]                             <= 0;
                                 d_valid[tracking_entry_master_idx[tracking_idx]] <= 0;
-                                tracking_entry_valid[tracking_idx]               <= 0;
+                                tracking_entry_finished[tracking_idx]            <= 1;
                                 tracking_entry_d_state[tracking_idx]             <= WAIT_SLAVE_RESP;
 
                                 stats_global_responces <= stats_global_responces + 1;
@@ -357,42 +404,18 @@ always_ff @(posedge clk or posedge reset) begin
             end
         end
 
-        // Handle auto-denied responces
+        // Handle tracking updates
         for (int tracking_idx = 0; tracking_idx < TRACK_DEPTH; tracking_idx = tracking_idx + 1) begin
-            if (tracking_entry_valid[tracking_idx] && tracking_entry_complete[tracking_idx]) begin
-                case(tracking_entry_d_state[tracking_idx])
-                    AUTO_RESPOND: begin
-                        `ifdef LOG_SWITCH `LOG("tl_switch", ("Auto Response to Master %0d tracking at %0h.", tracking_entry_master_idx[tracking_idx], tracking_idx)); `endif
-                        d_valid[tracking_entry_master_idx[tracking_idx]]                         <= 1'b1;
-                        d_opcode[tracking_entry_master_idx[tracking_idx]*3 +: 3]                 <= 3'b111;
-                        d_param[tracking_entry_master_idx[tracking_idx]*2 +: 2]                  <= 3'b00;
-                        d_size[tracking_entry_master_idx[tracking_idx]*3 +: 3]                   <= 3'b000;
-                        d_source[tracking_entry_master_idx[tracking_idx]*SID_WIDTH +: SID_WIDTH] <= tracking_entry_source_id[tracking_idx];
-                        d_data[tracking_entry_master_idx[tracking_idx]*XLEN +: XLEN]             <= {XLEN{1'b0}};
-                        d_corrupt[tracking_entry_master_idx[tracking_idx]]                       <= 1'b0;
-                        d_denied[tracking_entry_master_idx[tracking_idx]]                        <= 1'b1;
-
-                        tracking_entry_d_state[tracking_idx] <= WAIT_AUTO_RESPOND_ACK;
-                    end
-
-                    WAIT_AUTO_RESPOND_ACK: begin
-                        if (d_ready[tracking_entry_master_idx[tracking_idx]]) begin
-                            `ifdef LOG_SWITCH `LOG("tl_switch", ("Auto Response to Master %0d is acknowleged tracking at %0h.", tracking_entry_master_idx[tracking_idx], tracking_idx)); `endif
-                            d_valid[tracking_entry_master_idx[tracking_idx]] <= 0;
-                            tracking_entry_valid[tracking_idx]               <= 0;
-                            tracking_entry_complete[tracking_idx]            <= 0;
-
-                            stats_global_responces <= stats_global_responces + 1;
-                            stats_global_autoresponces <= stats_global_autoresponces + 1;
-
-                            tracking_entry_d_state[tracking_idx] <= WAIT_SLAVE_RESP;
-                        end
-                    end
-
-                    default: ;
-                endcase
+            // Set start to auto respond
+            if (tracking_entry_auto_resp[tracking_idx] == 1'b1 && tracking_entry_d_state[tracking_idx] == WAIT_SLAVE_RESP) begin
+                tracking_entry_d_state[tracking_idx] <= AUTO_RESPOND;
             end
-        end
+
+            // Finish resetting the tracker
+            if (tracking_entry_valid[tracking_idx] == 1'b0 && tracking_entry_finished[tracking_idx] == 1'b1) begin
+                tracking_entry_finished[tracking_idx] <= 1'b0;
+            end
+        end        
     end
 end
 

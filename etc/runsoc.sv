@@ -7,19 +7,21 @@
 // `define LOG_REG
 // `define LOG_BIOS
 // `define LOG_MEMORY
-`define LOG_MMIO
+// `define LOG_MMIO
 // `define LOG_CLOCKED
 // `define LOG_SWITCH
+`define LOG_SWITCH_MAP
 // `define LOG_UART
 // `define LOG_CSR
 
 // Only include the SOC
-`include "src/soc.sv"
+`include "src/soc_simple.sv"
 
 // Included to see UART output
 `include "test/zz_uart_baud_monitor.sv"
 
 module soc_runner;
+`include "test/test_macros.sv"
 
 // ====================================
 // Parameters
@@ -94,7 +96,7 @@ initial begin
     @(posedge clk);
 
     reset = 0;
-    $display("Running SOC rv i%00s%00s%00s...",
+    $display("Running rv%0di%00s%00s%00s...", `XLEN,
     `ifdef SUPPORT_M "m" `else "" `endif,
     `ifdef SUPPORT_B "b" `else "" `endif,
     `ifdef SUPPORT_ZICSR "_zicsr" `else "" `endif);
@@ -102,10 +104,13 @@ initial begin
     // Wait for a little bit for things to run
     repeat(100000) @(posedge clk);
 
+    // $display("Number of clock cycles: %00d pc=0x%0h", cycle_count, uut.cpu_inst.pc);
+    // `DISPLAY_MEM_RANGE_ARRAY(soc_inst.bios_inst.memory, 8, 16'hFF00, 16'hFFFF);
+
     $finish;
 end
 
-top #() uut (
+top #() soc_inst (
     .CLK(clk),           // System Clock
     .BTN_S1(reset),      // Button for reset
     .LED(leds),          // LEDs

@@ -11,6 +11,7 @@
 #define CLOCK_MHZ      27
 #define UART_ADDRESS   0x00010000
 #define OUTPUT_ADDRESS 0x00020000
+#define MEMORY_ADDRESS 0x00000F00
 
 void delay(uint32_t ms) {
     volatile uint32_t count;
@@ -23,11 +24,11 @@ void delay(uint32_t ms) {
 }
 
 int main() {
-    // volatile uint8_t *output = (volatile uint8_t *)(OUTPUT_ADDRESS);
-    // *output = 0 - 1;
+    volatile uint8_t *output = (volatile uint8_t *)(MEMORY_ADDRESS);
+    *output = 0 - 1;
 
     while(1) {
-        // *output = *output - 1;
+        *output = *output - 1;
 
         delay(1);
     }

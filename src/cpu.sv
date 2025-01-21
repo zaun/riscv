@@ -167,6 +167,7 @@ typedef enum logic [3:0] {
     `endif
 } cpu_state_t;
 cpu_state_t state;
+initial state = STATE_RESET;
 
 typedef enum logic [1:0] {
     ALU,
@@ -195,13 +196,12 @@ logic [XLEN-1:0] pc;
 logic [31:0]     instr;
 logic            halt;
 logic [5:0]      test_cpu_reg;
-logic [5:0]      test_interface_reg;
 logic            trap_reg;
 logic            if_wait;  // instruction loading,
 logic            mem_wait; // memory loading
 
 assign trap = trap_reg;
-assign test = { mem_ready, mem_ack, if_wait, state[2:0] };
+assign test = state;
 
 // Instruction Decoder Signals
 logic [6:0]      opcode;
@@ -390,9 +390,7 @@ tl_interface #(
     .tl_d_source (tl_d_source),
     .tl_d_data   (tl_d_data),
     .tl_d_corrupt(tl_d_corrupt),
-    .tl_d_denied (tl_d_denied),
-
-    .test        (test_interface_reg)
+    .tl_d_denied (tl_d_denied)
 );
 
 `ifdef SUPPORT_ZICSR

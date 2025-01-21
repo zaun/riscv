@@ -152,16 +152,16 @@ always_ff @(posedge clk) begin
             if (mem_read) begin
                 // Read the current WIDTH bits from memory and place them into the correct position in mem_odata_reg
                 if (mem_count == 0) begin
-                    `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, memory[mem_word_addr + mem_count] << (WIDTH * mem_count))); `endif
+                    `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%00h", XLEN, WIDTH, mem_word_addr, mem_count, memory[mem_word_addr + mem_count] << (WIDTH * mem_count))); `endif
                     mem_odata_reg <= memory[mem_word_addr + mem_count] << (WIDTH * mem_count);
                 end else begin
-                    `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count)))); `endif
+                    `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%00h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count)))); `endif
                     mem_odata_reg <= mem_odata_reg | (memory[mem_word_addr + mem_count] << (WIDTH * mem_count));
                 end
             end else if (mem_write) begin
                 // Extract the relevant WIDTH bits from mem_odata_reg and write them to the current memory address
                 `ifdef LOG_BIOS `LOG("tl_ul_bios", ("/MEM_WRITE/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d part_data=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg[WIDTH*mem_count +: WIDTH])); `endif
-                memory[mem_word_addr + mem_count] <= mem_odata_reg[WIDTH*mem_count +: WIDTH];
+                memory[mem_word_addr + mem_count] <= mem_idata_reg[WIDTH*mem_count +: WIDTH];
             end
 
             // Increment the counter for the next part
