@@ -152,7 +152,7 @@ initial begin
 end
 
 (* ram_style = "block" *)
-reg [WIDTH-1:0] memory[$clog2(SIZE/(WIDTH/8)) - 1:0];
+reg [WIDTH-1:0] memory[(SIZE/(WIDTH/8)) - 1:0];
 
 always @(posedge clk or posedge reset) begin
 	if (reset) begin

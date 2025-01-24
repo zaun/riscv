@@ -2,6 +2,7 @@
 `default_nettype none
 
 `define DEBUG
+// `define LOG_MEMORY
 
 `include "src/tl_switch.sv"
 `include "src/tl_interface.sv"
@@ -418,7 +419,7 @@ initial begin
     perform_write(32'h00000004, 3'b000, 32'h000000AB, 8'b00000001);
 
     // Verify that mock_memory has the byte written
-    `EXPECT("Memory at 0x0004 holds 0xAB", mock_mem.memory[32'h0004], 8'hAB)
+    `EXPECT("Memory at 0x0004 holds 0xAB", mock_mem.block_ram_inst.memory[32'h0004], 8'hAB)
 
     // Read byte from address 0x0004
     perform_read(32'h00000004, 3'b000, read_data);
@@ -433,8 +434,8 @@ initial begin
     perform_write(32'h00000008, 3'b001, 32'h0000CDEF, 8'b00000011);
 
     // Verify that mock_memory has the halfword written
-    `EXPECT("Memory at 0x0008 holds 0xEF", mock_mem.memory[32'h0008], 8'hEF)
-    `EXPECT("Memory at 0x0009 holds 0xCD", mock_mem.memory[32'h0009], 8'hCD)
+    `EXPECT("Memory at 0x0008 holds 0xEF", mock_mem.block_ram_inst.memory[32'h0008], 8'hEF)
+    `EXPECT("Memory at 0x0009 holds 0xCD", mock_mem.block_ram_inst.memory[32'h0009], 8'hCD)
 
     // Read halfword from address 0x0008
     perform_read(32'h00000008, 3'b001, read_data);
@@ -449,10 +450,10 @@ initial begin
     perform_write(32'h0000000C, 3'b010, 32'h12345678, 8'b00001111);
 
     // Verify that mock_memory has the word written
-    `EXPECT("Memory at 0x000C holds 0x78", mock_mem.memory[32'h000C], 8'h78)
-    `EXPECT("Memory at 0x000D holds 0x56", mock_mem.memory[32'h000D], 8'h56)
-    `EXPECT("Memory at 0x000E holds 0x34", mock_mem.memory[32'h000E], 8'h34)
-    `EXPECT("Memory at 0x000F holds 0x12", mock_mem.memory[32'h000F], 8'h12)
+    `EXPECT("Memory at 0x000C holds 0x78", mock_mem.block_ram_inst.memory[32'h000C], 8'h78)
+    `EXPECT("Memory at 0x000D holds 0x56", mock_mem.block_ram_inst.memory[32'h000D], 8'h56)
+    `EXPECT("Memory at 0x000E holds 0x34", mock_mem.block_ram_inst.memory[32'h000E], 8'h34)
+    `EXPECT("Memory at 0x000F holds 0x12", mock_mem.block_ram_inst.memory[32'h000F], 8'h12)
 
     // Read word from address 0x000C
     perform_read(32'h0000000C, 3'b010, read_data);
@@ -471,10 +472,10 @@ initial begin
     perform_write(32'h00000010, 3'b000, 32'h00000055, 8'b00000001);
 
     // Verify that only the first byte is updated
-    `EXPECT("Memory at 0x0010 holds 0x55", mock_mem.memory[32'h0010], 8'h55)
-    `EXPECT("Memory at 0x0011 holds 0xFF", mock_mem.memory[32'h0011], 8'hFF)
-    `EXPECT("Memory at 0x0012 holds 0xFF", mock_mem.memory[32'h0012], 8'hFF)
-    `EXPECT("Memory at 0x0013 holds 0xFF", mock_mem.memory[32'h0013], 8'hFF)
+    `EXPECT("Memory at 0x0010 holds 0x55", mock_mem.block_ram_inst.memory[32'h0010], 8'h55)
+    `EXPECT("Memory at 0x0011 holds 0xFF", mock_mem.block_ram_inst.memory[32'h0011], 8'hFF)
+    `EXPECT("Memory at 0x0012 holds 0xFF", mock_mem.block_ram_inst.memory[32'h0012], 8'hFF)
+    `EXPECT("Memory at 0x0013 holds 0xFF", mock_mem.block_ram_inst.memory[32'h0013], 8'hFF)
 
     // Read word from address 0x0010
     perform_read(32'h00000010, 3'b010, read_data);
@@ -520,10 +521,10 @@ initial begin
     perform_write(32'h00000200, 3'b010, 32'hDEADBEEF, 8'b11111111);
 
     // Verify that mock_memory did not update the memory
-    `EXPECT("Memory at 0x0200 remains 0x00", mock_mem.memory[32'h0200], 8'hxx)
-    `EXPECT("Memory at 0x0201 remains 0x00", mock_mem.memory[32'h0201], 8'hxx)
-    `EXPECT("Memory at 0x0202 remains 0x00", mock_mem.memory[32'h0202], 8'hxx)
-    `EXPECT("Memory at 0x0203 remains 0x00", mock_mem.memory[32'h0203], 8'hxx)
+    `EXPECT("Memory at 0x0200 remains 0x00", mock_mem.block_ram_inst.memory[32'h0200], 8'hxx)
+    `EXPECT("Memory at 0x0201 remains 0x00", mock_mem.block_ram_inst.memory[32'h0201], 8'hxx)
+    `EXPECT("Memory at 0x0202 remains 0x00", mock_mem.block_ram_inst.memory[32'h0202], 8'hxx)
+    `EXPECT("Memory at 0x0203 remains 0x00", mock_mem.block_ram_inst.memory[32'h0203], 8'hxx)
 
     // Reset denied_write_address for next tests
     reset = 1;
@@ -579,10 +580,10 @@ initial begin
 
     // Verify that mock_memory's memory remains unchanged or is corrupted
     // For this example, assume corrupt write does not update memory
-    `EXPECT("Memory at 0x0400 remains 0x00", mock_mem.memory[32'h0400], 8'hxx)
-    `EXPECT("Memory at 0x0401 remains 0x00", mock_mem.memory[32'h0401], 8'hxx)
-    `EXPECT("Memory at 0x0402 remains 0x00", mock_mem.memory[32'h0402], 8'hxx)
-    `EXPECT("Memory at 0x0403 remains 0x00", mock_mem.memory[32'h0403], 8'hxx)
+    `EXPECT("Memory at 0x0400 remains 0x00", mock_mem.block_ram_inst.memory[32'h0400], 8'hxx)
+    `EXPECT("Memory at 0x0401 remains 0x00", mock_mem.block_ram_inst.memory[32'h0401], 8'hxx)
+    `EXPECT("Memory at 0x0402 remains 0x00", mock_mem.block_ram_inst.memory[32'h0402], 8'hxx)
+    `EXPECT("Memory at 0x0403 remains 0x00", mock_mem.block_ram_inst.memory[32'h0403], 8'hxx)
 
     // Reset nmi_corrupt and corrupt_write_address for next tests
     reset = 1;
@@ -607,10 +608,10 @@ initial begin
     perform_write(32'h00000600, 3'b010, 32'hFEEDFACE, 8'b11111111);
 
     // Verify that mock_memory did not update the memory
-    `EXPECT("Memory at 0x0600 remains 0x00", mock_mem.memory[32'h0600], 8'hxx)
-    `EXPECT("Memory at 0x0601 remains 0x00", mock_mem.memory[32'h0601], 8'hxx)
-    `EXPECT("Memory at 0x0602 remains 0x00", mock_mem.memory[32'h0602], 8'hxx)
-    `EXPECT("Memory at 0x0603 remains 0x00", mock_mem.memory[32'h0603], 8'hxx)
+    `EXPECT("Memory at 0x0600 remains 0x00", mock_mem.block_ram_inst.memory[32'h0600], 8'hxx)
+    `EXPECT("Memory at 0x0601 remains 0x00", mock_mem.block_ram_inst.memory[32'h0601], 8'hxx)
+    `EXPECT("Memory at 0x0602 remains 0x00", mock_mem.block_ram_inst.memory[32'h0602], 8'hxx)
+    `EXPECT("Memory at 0x0603 remains 0x00", mock_mem.block_ram_inst.memory[32'h0603], 8'hxx)
 
     // Reset denied_write_address for final tests
     reset = 1;

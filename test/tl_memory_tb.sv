@@ -2,7 +2,7 @@
 `default_nettype none
 
 `define DEBUG // Turn on debugging ports
-`define LOG_MEMORY
+// `define LOG_MEMORY
 
 `include "src/tl_memory.sv"
 
@@ -341,233 +341,238 @@ initial begin
     @(posedge clk);
 
     // ====================================
+    // Output starting ram
+    // ====================================
+    `DISPLAY_MEM_RANGE_ARRAY(mock_mem.block_ram_inst, MEM_WIDTH, 'h00, 'h3f);
+
+    // ====================================
     // Test: Write Bytes to address 0x00...0x0F
     // ====================================
     `TEST("memory", "Write Byte all alignments");
     WriteData(32'h00, 3'b000, 4'b0001, 32'h00000011, 0, 0);
-    // WriteData(32'h01, 3'b000, 4'b0001, 32'h00000022, 0, 0);
-    // WriteData(32'h02, 3'b000, 4'b0010, 32'h00000033, 0, 0);
-    // WriteData(32'h03, 3'b000, 4'b0010, 32'h00000044, 0, 0);
-    // WriteData(32'h04, 3'b000, 4'b0100, 32'h00000055, 0, 0);
-    // WriteData(32'h05, 3'b000, 4'b0100, 32'h00000066, 0, 0);
-    // WriteData(32'h06, 3'b000, 4'b1000, 32'h00000077, 0, 0);
-    // WriteData(32'h07, 3'b000, 4'b1000, 32'h00000088, 0, 0);
-    `EXPECT("Byte at 0x00 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h00), 'h11);
-    // `EXPECT("Byte at 0x01 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h01), 'h22);
-    // `EXPECT("Byte at 0x02 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h02), 'h33);
-    // `EXPECT("Byte at 0x03 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h03), 'h44);
-    // `EXPECT("Byte at 0x04 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h04), 'h55);
-    // `EXPECT("Byte at 0x05 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h05), 'h66);
-    // `EXPECT("Byte at 0x06 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h06), 'h77);
-    // `EXPECT("Byte at 0x07 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h07), 'h88);
-    // if (XLEN >=64) begin
-    //     `TEST("memory", "Write Byte Extended Alignments");
-    //     WriteData(32'h08, 3'b000, 8'b00010000, 64'h00000099, 0, 0);
-    //     WriteData(32'h09, 3'b000, 8'b00010000, 64'h000000AA, 0, 0);
-    //     WriteData(32'h0A, 3'b000, 8'b00100000, 64'h000000BB, 0, 0);
-    //     WriteData(32'h0B, 3'b000, 8'b00100000, 64'h000000CC, 0, 0);
-    //     WriteData(32'h0C, 3'b000, 8'b01000000, 64'h000000DD, 0, 0);
-    //     WriteData(32'h0D, 3'b000, 8'b01000000, 64'h000000EE, 0, 0);
-    //     WriteData(32'h0E, 3'b000, 8'b10000000, 64'h000000FF, 0, 0);
-    //     WriteData(32'h0F, 3'b000, 8'b10000000, 64'h000000ED, 0, 0);
-    //     `EXPECT("Byte at 0x08 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h08), 'h99);
-    //     `EXPECT("Byte at 0x09 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h09), 'hAA);
-    //     `EXPECT("Byte at 0x0A is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0A), 'hBB);
-    //     `EXPECT("Byte at 0x0B is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0B), 'hCC);
-    //     `EXPECT("Byte at 0x0C is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0C), 'hDD);
-    //     `EXPECT("Byte at 0x0D is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0D), 'hEE);
-    //     `EXPECT("Byte at 0x0E is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0E), 'hFF);
-    //     `EXPECT("Byte at 0x0F is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h0F), 'hED);
-    // end
+    WriteData(32'h01, 3'b000, 4'b0001, 32'h00000022, 0, 0);
+    WriteData(32'h02, 3'b000, 4'b0010, 32'h00000033, 0, 0);
+    WriteData(32'h03, 3'b000, 4'b0010, 32'h00000044, 0, 0);
+    WriteData(32'h04, 3'b000, 4'b0100, 32'h00000055, 0, 0);
+    WriteData(32'h05, 3'b000, 4'b0100, 32'h00000066, 0, 0);
+    WriteData(32'h06, 3'b000, 4'b1000, 32'h00000077, 0, 0);
+    WriteData(32'h07, 3'b000, 4'b1000, 32'h00000088, 0, 0);
+    `EXPECT("Byte at 0x00 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h00), 'h11);
+    `EXPECT("Byte at 0x01 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h01), 'h22);
+    `EXPECT("Byte at 0x02 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h02), 'h33);
+    `EXPECT("Byte at 0x03 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h03), 'h44);
+    `EXPECT("Byte at 0x04 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h04), 'h55);
+    `EXPECT("Byte at 0x05 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h05), 'h66);
+    `EXPECT("Byte at 0x06 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h06), 'h77);
+    `EXPECT("Byte at 0x07 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h07), 'h88);
+    if (XLEN >=64) begin
+        `TEST("memory", "Write Byte Extended Alignments");
+        WriteData(32'h08, 3'b000, 8'b00010000, 64'h00000099, 0, 0);
+        WriteData(32'h09, 3'b000, 8'b00010000, 64'h000000AA, 0, 0);
+        WriteData(32'h0A, 3'b000, 8'b00100000, 64'h000000BB, 0, 0);
+        WriteData(32'h0B, 3'b000, 8'b00100000, 64'h000000CC, 0, 0);
+        WriteData(32'h0C, 3'b000, 8'b01000000, 64'h000000DD, 0, 0);
+        WriteData(32'h0D, 3'b000, 8'b01000000, 64'h000000EE, 0, 0);
+        WriteData(32'h0E, 3'b000, 8'b10000000, 64'h000000FF, 0, 0);
+        WriteData(32'h0F, 3'b000, 8'b10000000, 64'h000000ED, 0, 0);
+        `EXPECT("Byte at 0x08 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h08), 'h99);
+        `EXPECT("Byte at 0x09 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h09), 'hAA);
+        `EXPECT("Byte at 0x0A is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h0A), 'hBB);
+        `EXPECT("Byte at 0x0B is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h0B), 'hCC);
+        `EXPECT("Byte at 0x0C is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h0C), 'hDD);
+        `EXPECT("Byte at 0x0D is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h0D), 'hEE);
+        `EXPECT("Byte at 0x0E is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h0E), 'hFF);
+        `EXPECT("Byte at 0x0F is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h0F), 'hED);
+    end
 
-    // // ====================================
-    // // Test: Write Half-Words to address 0x10...0x1F
-    // // ====================================
-    // `TEST("memory", "Write Half-Words all valid alignments");
-    // WriteData(32'h10, 3'b001, 4'b0011, 32'h00001122, 0, 0);
-    // WriteData(32'h12, 3'b001, 4'b0011, 32'h00003344, 0, 0);
-    // WriteData(32'h14, 3'b001, 4'b1100, 32'h00005566, 0, 0);
-    // WriteData(32'h16, 3'b001, 4'b1100, 32'h00007788, 0, 0);
-    // `EXPECT("Byte at 0x10 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h10), 'h22);
-    // `EXPECT("Byte at 0x11 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h11), 'h11);
-    // `EXPECT("Byte at 0x12 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h12), 'h44);
-    // `EXPECT("Byte at 0x13 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h13), 'h33);
-    // `EXPECT("Byte at 0x14 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h14), 'h66);
-    // `EXPECT("Byte at 0x15 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h15), 'h55);
-    // `EXPECT("Byte at 0x16 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h16), 'h88);
-    // `EXPECT("Byte at 0x17 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h17), 'h77);
-    // if (XLEN >=64) begin
-    //     `TEST("memory", "Write Half-Words Extended Alignments");
-    //     WriteData(32'h18, 3'b001, 8'b00110000, 64'h000099AA, 0, 0);
-    //     WriteData(32'h1A, 3'b001, 8'b00110000, 64'h0000BBCC, 0, 0);
-    //     WriteData(32'h1C, 3'b001, 8'b11000000, 64'h0000DDEE, 0, 0);
-    //     WriteData(32'h1E, 3'b001, 8'b11000000, 64'h0000FFED, 0, 0);
-    //     `EXPECT("Byte at 0x18 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h18), 'hAA);
-    //     `EXPECT("Byte at 0x19 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h19), 'h99);
-    //     `EXPECT("Byte at 0x1A is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1A), 'hCC);
-    //     `EXPECT("Byte at 0x1B is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1B), 'hBB);
-    //     `EXPECT("Byte at 0x1C is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1C), 'hEE);
-    //     `EXPECT("Byte at 0x1D is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1D), 'hDD);
-    //     `EXPECT("Byte at 0x1E is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1E), 'hED);
-    //     `EXPECT("Byte at 0x1F is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h1F), 'hFF);
-    // end
+    // ====================================
+    // Test: Write Half-Words to address 0x10...0x1F
+    // ====================================
+    `TEST("memory", "Write Half-Words all valid alignments");
+    WriteData(32'h10, 3'b001, 4'b0011, 32'h00001122, 0, 0);
+    WriteData(32'h12, 3'b001, 4'b0011, 32'h00003344, 0, 0);
+    WriteData(32'h14, 3'b001, 4'b1100, 32'h00005566, 0, 0);
+    WriteData(32'h16, 3'b001, 4'b1100, 32'h00007788, 0, 0);
+    `EXPECT("Byte at 0x10 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h10), 'h22);
+    `EXPECT("Byte at 0x11 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h11), 'h11);
+    `EXPECT("Byte at 0x12 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h12), 'h44);
+    `EXPECT("Byte at 0x13 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h13), 'h33);
+    `EXPECT("Byte at 0x14 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h14), 'h66);
+    `EXPECT("Byte at 0x15 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h15), 'h55);
+    `EXPECT("Byte at 0x16 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h16), 'h88);
+    `EXPECT("Byte at 0x17 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h17), 'h77);
+    if (XLEN >=64) begin
+        `TEST("memory", "Write Half-Words Extended Alignments");
+        WriteData(32'h18, 3'b001, 8'b00110000, 64'h000099AA, 0, 0);
+        WriteData(32'h1A, 3'b001, 8'b00110000, 64'h0000BBCC, 0, 0);
+        WriteData(32'h1C, 3'b001, 8'b11000000, 64'h0000DDEE, 0, 0);
+        WriteData(32'h1E, 3'b001, 8'b11000000, 64'h0000FFED, 0, 0);
+        `EXPECT("Byte at 0x18 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h18), 'hAA);
+        `EXPECT("Byte at 0x19 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h19), 'h99);
+        `EXPECT("Byte at 0x1A is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h1A), 'hCC);
+        `EXPECT("Byte at 0x1B is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h1B), 'hBB);
+        `EXPECT("Byte at 0x1C is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h1C), 'hEE);
+        `EXPECT("Byte at 0x1D is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h1D), 'hDD);
+        `EXPECT("Byte at 0x1E is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h1E), 'hED);
+        `EXPECT("Byte at 0x1F is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h1F), 'hFF);
+    end
 
-    // // ====================================
-    // // Test: Write Half-Words invalid alignments
-    // // ====================================
-    // `TEST("memory", "Write Half-Words invalid alignments");
-    // WriteData(32'h16, 3'b001, 4'b1110, 32'h00007788, 1, 0); // Misaligned mask
-    // WriteData(32'h16, 3'b001, 4'b0111, 32'h00007788, 1, 0); // Misaligned mask
-    // WriteData(32'h16, 3'b001, 4'b0110, 32'h00007788, 1, 0); // Misaligned mask
-    // WriteData(32'h16, 3'b001, 4'b0001, 32'h00007788, 1, 0); // Misaligned mask
-    // WriteData(32'h16, 3'b001, 4'b0010, 32'h00007788, 1, 0); // Misaligned mask
-    // WriteData(32'h16, 3'b001, 4'b0100, 32'h00007788, 1, 0); // Misaligned mask
-    // WriteData(32'h16, 3'b001, 4'b1000, 32'h00007788, 1, 0); // Misaligned mask
-    // WriteData(32'h16, 3'b001, 4'b1010, 32'h00007788, 1, 0); // Misaligned mask
-    // if (XLEN >=64) begin
-    //     `TEST("memory", "Write Half-Words Extended invalid alignments");
-    //     WriteData(32'h18, 3'b001, 8'b00011000, 64'h000099AA, 1, 0); // Misaligned mask
-    //     WriteData(32'h18, 3'b001, 8'b01100000, 64'h000099AA, 1, 0); // Misaligned mask
-    //     WriteData(32'h18, 3'b001, 8'b00111000, 64'h000099AA, 1, 0); // Misaligned mask
-    //     WriteData(32'h18, 3'b001, 8'b10001000, 64'h000099AA, 1, 0); // Misaligned mask
-    // end
+    // ====================================
+    // Test: Write Half-Words invalid alignments
+    // ====================================
+    `TEST("memory", "Write Half-Words invalid alignments");
+    WriteData(32'h16, 3'b001, 4'b1110, 32'h00007788, 1, 0); // Misaligned mask
+    WriteData(32'h16, 3'b001, 4'b0111, 32'h00007788, 1, 0); // Misaligned mask
+    WriteData(32'h16, 3'b001, 4'b0110, 32'h00007788, 1, 0); // Misaligned mask
+    WriteData(32'h16, 3'b001, 4'b0001, 32'h00007788, 1, 0); // Misaligned mask
+    WriteData(32'h16, 3'b001, 4'b0010, 32'h00007788, 1, 0); // Misaligned mask
+    WriteData(32'h16, 3'b001, 4'b0100, 32'h00007788, 1, 0); // Misaligned mask
+    WriteData(32'h16, 3'b001, 4'b1000, 32'h00007788, 1, 0); // Misaligned mask
+    WriteData(32'h16, 3'b001, 4'b1010, 32'h00007788, 1, 0); // Misaligned mask
+    if (XLEN >=64) begin
+        `TEST("memory", "Write Half-Words Extended invalid alignments");
+        WriteData(32'h18, 3'b001, 8'b00011000, 64'h000099AA, 1, 0); // Misaligned mask
+        WriteData(32'h18, 3'b001, 8'b01100000, 64'h000099AA, 1, 0); // Misaligned mask
+        WriteData(32'h18, 3'b001, 8'b00111000, 64'h000099AA, 1, 0); // Misaligned mask
+        WriteData(32'h18, 3'b001, 8'b10001000, 64'h000099AA, 1, 0); // Misaligned mask
+    end
 
-    // // ====================================
-    // // Test: Write Words to address 0x20...0x3F
-    // // ====================================
-    // `TEST("memory", "Write Words all alignments");
-    // WriteData(32'h20, 3'b010, 4'b1111, 32'h11223344, 0, 0);
-    // WriteData(32'h24, 3'b010, 4'b1111, 32'h55667788, 0, 0);
-    // `EXPECT("Byte at 0x20 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h20), 'h44);
-    // `EXPECT("Byte at 0x21 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h21), 'h33);
-    // `EXPECT("Byte at 0x22 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h22), 'h22);
-    // `EXPECT("Byte at 0x23 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h23), 'h11);
-    // `EXPECT("Byte at 0x24 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h24), 'h88);
-    // `EXPECT("Byte at 0x25 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h25), 'h77);
-    // `EXPECT("Byte at 0x26 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h26), 'h66);
-    // `EXPECT("Byte at 0x27 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h27), 'h55);
-    // if (XLEN >=64) begin
-    //     `TEST("memory", "Write Words Extended Alignments");
-    //     WriteData(32'h28, 3'b010, 8'b11110000, 64'h99AABBCC, 0, 0);
-    //     WriteData(32'h2C, 3'b010, 8'b11110000, 64'hDDEEFFED, 0, 0);
-    //     `EXPECT("Byte at 0x28 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h28), 'hCC);
-    //     `EXPECT("Byte at 0x29 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h29), 'hBB);
-    //     `EXPECT("Byte at 0x2A is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2A), 'hAA);
-    //     `EXPECT("Byte at 0x2B is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2B), 'h99);
-    //     `EXPECT("Byte at 0x2C is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2C), 'hED);
-    //     `EXPECT("Byte at 0x2D is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2D), 'hFF);
-    //     `EXPECT("Byte at 0x2E is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2E), 'hEE);
-    //     `EXPECT("Byte at 0x2F is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h2F), 'hDD);
-    // end
+    // ====================================
+    // Test: Write Words to address 0x20...0x3F
+    // ====================================
+    `TEST("memory", "Write Words all alignments");
+    WriteData(32'h20, 3'b010, 4'b1111, 32'h11223344, 0, 0);
+    WriteData(32'h24, 3'b010, 4'b1111, 32'h55667788, 0, 0);
+    `EXPECT("Byte at 0x20 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h20), 'h44);
+    `EXPECT("Byte at 0x21 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h21), 'h33);
+    `EXPECT("Byte at 0x22 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h22), 'h22);
+    `EXPECT("Byte at 0x23 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h23), 'h11);
+    `EXPECT("Byte at 0x24 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h24), 'h88);
+    `EXPECT("Byte at 0x25 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h25), 'h77);
+    `EXPECT("Byte at 0x26 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h26), 'h66);
+    `EXPECT("Byte at 0x27 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h27), 'h55);
+    if (XLEN >=64) begin
+        `TEST("memory", "Write Words Extended Alignments");
+        WriteData(32'h28, 3'b010, 8'b11110000, 64'h99AABBCC, 0, 0);
+        WriteData(32'h2C, 3'b010, 8'b11110000, 64'hDDEEFFED, 0, 0);
+        `EXPECT("Byte at 0x28 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h28), 'hCC);
+        `EXPECT("Byte at 0x29 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h29), 'hBB);
+        `EXPECT("Byte at 0x2A is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h2A), 'hAA);
+        `EXPECT("Byte at 0x2B is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h2B), 'h99);
+        `EXPECT("Byte at 0x2C is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h2C), 'hED);
+        `EXPECT("Byte at 0x2D is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h2D), 'hFF);
+        `EXPECT("Byte at 0x2E is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h2E), 'hEE);
+        `EXPECT("Byte at 0x2F is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h2F), 'hDD);
+    end
 
-    // // ====================================
-    // // Test: Write Double-Words to address 0x30...0x3F
-    // // ====================================
-    // if (XLEN >=64) begin
-    //     `TEST("memory", "Write Double-Words all alignments");
-    //     WriteData(32'h30, 3'b011, 8'b11111111, 64'h1122334455667788, 0, 0);
-    //     WriteData(32'h38, 3'b011, 8'b11111111, 64'h99AABBCCDDEEFFED, 0, 0);
-    //     `EXPECT("Byte at 0x30 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h30), 'h88);
-    //     `EXPECT("Byte at 0x31 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h31), 'h77);
-    //     `EXPECT("Byte at 0x32 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h32), 'h66);
-    //     `EXPECT("Byte at 0x33 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h33), 'h55);
-    //     `EXPECT("Byte at 0x34 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h34), 'h44);
-    //     `EXPECT("Byte at 0x35 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h35), 'h33);
-    //     `EXPECT("Byte at 0x36 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h36), 'h22);
-    //     `EXPECT("Byte at 0x37 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h37), 'h11);
-    //     `EXPECT("Byte at 0x38 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h38), 'hED);
-    //     `EXPECT("Byte at 0x39 is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h39), 'hFF);
-    //     `EXPECT("Byte at 0x3A is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3A), 'hEE);
-    //     `EXPECT("Byte at 0x3B is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3B), 'hDD);
-    //     `EXPECT("Byte at 0x3C is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3C), 'hCC);
-    //     `EXPECT("Byte at 0x3D is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3D), 'hBB);
-    //     `EXPECT("Byte at 0x3E is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3E), 'hAA);
-    //     `EXPECT("Byte at 0x3F is valid", `GET_BYTE_FROM_MEM(mock_mem.memory, MEM_WIDTH, 'h3F), 'h99);
-    // end
+    // ====================================
+    // Test: Write Double-Words to address 0x30...0x3F
+    // ====================================
+    if (XLEN >=64) begin
+        `TEST("memory", "Write Double-Words all alignments");
+        WriteData(32'h30, 3'b011, 8'b11111111, 64'h1122334455667788, 0, 0);
+        WriteData(32'h38, 3'b011, 8'b11111111, 64'h99AABBCCDDEEFFED, 0, 0);
+        `EXPECT("Byte at 0x30 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h30), 'h88);
+        `EXPECT("Byte at 0x31 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h31), 'h77);
+        `EXPECT("Byte at 0x32 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h32), 'h66);
+        `EXPECT("Byte at 0x33 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h33), 'h55);
+        `EXPECT("Byte at 0x34 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h34), 'h44);
+        `EXPECT("Byte at 0x35 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h35), 'h33);
+        `EXPECT("Byte at 0x36 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h36), 'h22);
+        `EXPECT("Byte at 0x37 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h37), 'h11);
+        `EXPECT("Byte at 0x38 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h38), 'hED);
+        `EXPECT("Byte at 0x39 is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h39), 'hFF);
+        `EXPECT("Byte at 0x3A is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h3A), 'hEE);
+        `EXPECT("Byte at 0x3B is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h3B), 'hDD);
+        `EXPECT("Byte at 0x3C is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h3C), 'hCC);
+        `EXPECT("Byte at 0x3D is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h3D), 'hBB);
+        `EXPECT("Byte at 0x3E is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h3E), 'hAA);
+        `EXPECT("Byte at 0x3F is valid", `GET_BYTE_FROM_MEM(mock_mem.block_ram_inst.memory, MEM_WIDTH, 'h3F), 'h99);
+    end
 
-    // // ====================================
-    // // Test: Read Bytes to address 0x00...0x0F
-    // // ====================================
-    // `TEST("memory", "Read Byte all alignments");
-    // ReadData(32'h00, 3'b000, 'h11, 0, 0);
-    // ReadData(32'h01, 3'b000, 'h22, 0, 0);
-    // ReadData(32'h02, 3'b000, 'h33, 0, 0);
-    // ReadData(32'h03, 3'b000, 'h44, 0, 0);
-    // ReadData(32'h04, 3'b000, 'h55, 0, 0);
-    // ReadData(32'h05, 3'b000, 'h66, 0, 0);
-    // ReadData(32'h06, 3'b000, 'h77, 0, 0);
-    // ReadData(32'h07, 3'b000, 'h88, 0, 0);
-    // if (XLEN >=64) begin
-    //     ReadData(32'h08, 3'b000, 'h99, 0, 0);
-    //     ReadData(32'h09, 3'b000, 'hAA, 0, 0);
-    //     ReadData(32'h0A, 3'b000, 'hBB, 0, 0);
-    //     ReadData(32'h0B, 3'b000, 'hCC, 0, 0);
-    //     ReadData(32'h0C, 3'b000, 'hDD, 0, 0);
-    //     ReadData(32'h0D, 3'b000, 'hEE, 0, 0);
-    //     ReadData(32'h0E, 3'b000, 'hFF, 0, 0);
-    //     ReadData(32'h0F, 3'b000, 'hED, 0, 0);
-    // end
+    // ====================================
+    // Test: Read Bytes to address 0x00...0x0F
+    // ====================================
+    `TEST("memory", "Read Byte all alignments");
+    ReadData(32'h00, 3'b000, 'h11, 0, 0);
+    ReadData(32'h01, 3'b000, 'h22, 0, 0);
+    ReadData(32'h02, 3'b000, 'h33, 0, 0);
+    ReadData(32'h03, 3'b000, 'h44, 0, 0);
+    ReadData(32'h04, 3'b000, 'h55, 0, 0);
+    ReadData(32'h05, 3'b000, 'h66, 0, 0);
+    ReadData(32'h06, 3'b000, 'h77, 0, 0);
+    ReadData(32'h07, 3'b000, 'h88, 0, 0);
+    if (XLEN >=64) begin
+        ReadData(32'h08, 3'b000, 'h99, 0, 0);
+        ReadData(32'h09, 3'b000, 'hAA, 0, 0);
+        ReadData(32'h0A, 3'b000, 'hBB, 0, 0);
+        ReadData(32'h0B, 3'b000, 'hCC, 0, 0);
+        ReadData(32'h0C, 3'b000, 'hDD, 0, 0);
+        ReadData(32'h0D, 3'b000, 'hEE, 0, 0);
+        ReadData(32'h0E, 3'b000, 'hFF, 0, 0);
+        ReadData(32'h0F, 3'b000, 'hED, 0, 0);
+    end
 
-    // // ====================================
-    // // Test: Read Half-Word to address 0x10...0x1F
-    // // ====================================
-    // `TEST("memory", "Read Half-Word all alignments");
-    // ReadData(32'h10, 3'b001, 'h1122, 0, 0);
-    // ReadData(32'h12, 3'b001, 'h3344, 0, 0);
-    // ReadData(32'h14, 3'b001, 'h5566, 0, 0);
-    // ReadData(32'h16, 3'b001, 'h7788, 0, 0);
-    // if (XLEN >=64) begin
-    //     ReadData(32'h18, 3'b001, 'h99AA, 0, 0);
-    //     ReadData(32'h1A, 3'b001, 'hBBCC, 0, 0);
-    //     ReadData(32'h1C, 3'b001, 'hDDEE, 0, 0);
-    //     ReadData(32'h1E, 3'b001, 'hFFED, 0, 0);
-    // end
+    // ====================================
+    // Test: Read Half-Word to address 0x10...0x1F
+    // ====================================
+    `TEST("memory", "Read Half-Word all alignments");
+    ReadData(32'h10, 3'b001, 'h1122, 0, 0);
+    ReadData(32'h12, 3'b001, 'h3344, 0, 0);
+    ReadData(32'h14, 3'b001, 'h5566, 0, 0);
+    ReadData(32'h16, 3'b001, 'h7788, 0, 0);
+    if (XLEN >=64) begin
+        ReadData(32'h18, 3'b001, 'h99AA, 0, 0);
+        ReadData(32'h1A, 3'b001, 'hBBCC, 0, 0);
+        ReadData(32'h1C, 3'b001, 'hDDEE, 0, 0);
+        ReadData(32'h1E, 3'b001, 'hFFED, 0, 0);
+    end
 
-    // // ====================================
-    // // Test: Read Words to address 0x20...0x3F
-    // // ====================================
-    // `TEST("memory", "Read Word all alignments");
-    // ReadData(32'h20, 3'b010, 'h11223344, 0, 0);
-    // ReadData(32'h24, 3'b010, 'h55667788, 0, 0);
-    // if (XLEN >=64) begin
-    //     ReadData(32'h28, 3'b010, 'h99AABBCC, 0, 0);
-    //     ReadData(32'h2C, 3'b010, 'hDDEEFFED, 0, 0);
-    // end
+    // ====================================
+    // Test: Read Words to address 0x20...0x3F
+    // ====================================
+    `TEST("memory", "Read Word all alignments");
+    ReadData(32'h20, 3'b010, 'h11223344, 0, 0);
+    ReadData(32'h24, 3'b010, 'h55667788, 0, 0);
+    if (XLEN >=64) begin
+        ReadData(32'h28, 3'b010, 'h99AABBCC, 0, 0);
+        ReadData(32'h2C, 3'b010, 'hDDEEFFED, 0, 0);
+    end
 
-    // // ====================================
-    // // Test: Read Double-Word to address 0x30...0x3F
-    // // ====================================
-    // if (XLEN >=64) begin
-    //     `TEST("memory", "Read Double-Word all alignments");
-    //     ReadData(32'h30, 3'b011, 'h1122334455667788, 0, 0);
-    //     ReadData(32'h38, 3'b011, 'h99AABBCCDDEEFFED, 0, 0);
-    // end
+    // ====================================
+    // Test: Read Double-Word to address 0x30...0x3F
+    // ====================================
+    if (XLEN >=64) begin
+        `TEST("memory", "Read Double-Word all alignments");
+        ReadData(32'h30, 3'b011, 'h1122334455667788, 0, 0);
+        ReadData(32'h38, 3'b011, 'h99AABBCCDDEEFFED, 0, 0);
+    end
 
-    // // ====================================
-    // // Test: Denied and Corrupt Reads
-    // // ====================================
-    // `TEST("memory", "Denied Reads using dbg_denied_read_address");
-    // dbg_denied_read_address = 32'h10; // Mark address 0x10 as denied
-    // ReadData(32'h10, 3'b001, 'h0000, 1, 0); // Expect denied
-    // dbg_denied_read_address = {XLEN{1'b1}}; // Clear denied condition
+    // ====================================
+    // Test: Denied and Corrupt Reads
+    // ====================================
+    `TEST("memory", "Denied Reads using dbg_denied_read_address");
+    dbg_denied_read_address = 32'h10; // Mark address 0x10 as denied
+    ReadData(32'h10, 3'b001, 'h0000, 1, 0); // Expect denied
+    dbg_denied_read_address = {XLEN{1'b1}}; // Clear denied condition
 
-    // `TEST("memory", "Corrupt Reads using dbg_corrupt_read_address");
-    // dbg_corrupt_read_address = 32'h12; // Mark address 0x12 as corrupt
-    // ReadData(32'h12, 3'b001, 'h0000, 0, 1); // Expect corrupt
-    // dbg_corrupt_read_address = {XLEN{1'b1}}; // Clear corrupt condition
+    `TEST("memory", "Corrupt Reads using dbg_corrupt_read_address");
+    dbg_corrupt_read_address = 32'h12; // Mark address 0x12 as corrupt
+    ReadData(32'h12, 3'b001, 'h0000, 0, 1); // Expect corrupt
+    dbg_corrupt_read_address = {XLEN{1'b1}}; // Clear corrupt condition
 
-    // // ====================================
-    // // Test: Denied and Corrupt Writes
-    // // ====================================
-    // `TEST("memory", "Denied Writes using dbg_denied_write_address");
-    // dbg_denied_write_address = 32'h20; // Mark address 0x20 as denied
-    // WriteData(32'h20, 3'b010, 8'b11110000, 32'hDEADBEEF, 1, 0); // Expect denied
-    // dbg_denied_write_address = {XLEN{1'b1}}; // Clear denied condition
+    // ====================================
+    // Test: Denied and Corrupt Writes
+    // ====================================
+    `TEST("memory", "Denied Writes using dbg_denied_write_address");
+    dbg_denied_write_address = 32'h20; // Mark address 0x20 as denied
+    WriteData(32'h20, 3'b010, 8'b11110000, 32'hDEADBEEF, 1, 0); // Expect denied
+    dbg_denied_write_address = {XLEN{1'b1}}; // Clear denied condition
 
-    // `TEST("memory", "Corrupt Writes using dbg_corrupt_write_address");
-    // dbg_corrupt_write_address = 32'h24; // Mark address 0x24 as corrupt
-    // WriteData(32'h24, 3'b010, 8'b11110000, 32'hBADF00D, 0, 1); // Expect corrupt
-    // dbg_corrupt_write_address = {XLEN{1'b1}}; // Clear corrupt condition
+    `TEST("memory", "Corrupt Writes using dbg_corrupt_write_address");
+    dbg_corrupt_write_address = 32'h24; // Mark address 0x24 as corrupt
+    WriteData(32'h24, 3'b010, 8'b11110000, 32'hBADF00D, 0, 1); // Expect corrupt
+    dbg_corrupt_write_address = {XLEN{1'b1}}; // Clear corrupt condition
 
     // ====================================
     // Finish Testbench

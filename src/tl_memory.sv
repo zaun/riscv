@@ -152,7 +152,9 @@ initial begin
     `ASSERT((XLEN % WIDTH == 0), "XLEN must be divisible by WIDTH to ensure valid memory operations.");
     `ASSERT((SID_WIDTH >= 2), "SID_WIDTH must be 2 or more.");
     `ASSERT((SIZE % (WIDTH / 8) == 0), "SIZE must be a multiple of WIDTH/8 to ensure proper byte alignment.");
+    `ifdef LOG_MEMORY `LOG("tl_memory", ("memory address size is %00d bits", $clog2(SIZE/(WIDTH/8)))); `endif
 end
+
 
 // Local parameters
 localparam [2:0] TL_ACCESS_ACK              = 3'b000;
@@ -248,52 +250,85 @@ generate
 endgenerate
 
 // Memory Access
-localparam int MEM_PARTS = XLEN / WIDTH;    // number of reads/writes for each XLEN of data
-reg [$clog2(MEM_PARTS):0]   mem_count;      // internal Counter for mem ops
-reg                         mem_read;       // input set high for read mem op
-reg                         mem_write;      // input set high for read mem op
-reg                         mem_start;      // input set high to start mem op
-reg                         mem_done;       // output will be high when mem op is done
-reg [XLEN-1:0]              mem_idata_reg;   // input memory data register
-reg [XLEN-1:0]              mem_odata_reg;   // input memory data register
-always_ff @(posedge clk) begin
-    if (mem_start && ~mem_done) begin
-        if (mem_count < MEM_PARTS) begin
-            if (mem_read) begin
-                // Read the current WIDTH bits from memory and place them into the correct position in mem_odata_reg
-                block_write_en <= 0;
-                block_read_address <= (mem_word_addr + mem_count);
-                if (mem_count == 0) begin
-                    `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%00h", XLEN, WIDTH, mem_word_addr, mem_count, block_read_data << (WIDTH * mem_count))); `endif
-                    mem_odata_reg <= block_read_data << (WIDTH * mem_count);
-                end else begin
-                    `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d mem_odata_reg=0x%00h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg | (block_read_data << (WIDTH * mem_count))); `endif
-                    mem_odata_reg <= mem_odata_reg | (block_read_data << (WIDTH * mem_count));
+localparam int MEM_PARTS = XLEN / WIDTH;    // Number of reads/writes for each XLEN of data
+reg [$clog2(MEM_PARTS):0]   mem_count;      // Internal Counter for mem ops
+reg                         mem_read;       // Input set high for read mem op
+reg                         mem_write;      // Input set high for write mem op
+reg                         mem_start;      // Input set high to start mem op
+reg                         mem_done;       // Output will be high when mem op is done
+reg [1:0]                   mem_read_state; // 00 = set addr, 01 = wait, 10 = read data
+reg [XLEN-1:0]              mem_idata_reg;  // Input memory data register
+reg [XLEN-1:0]              mem_odata_reg;  // Output memory data register
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        // Reset all control and data registers
+        mem_count           <= 0;
+        mem_done            <= 0;
+        mem_read_state      <= 0;
+        block_write_en      <= 0;
+        block_write_address <= 0;
+        block_write_data    <= 0;
+        block_read_address  <= 0;
+        mem_odata_reg       <= 0;
+    end else if (mem_start && ~mem_done) begin
+        if (mem_write && ~mem_read) begin
+            if (mem_count < MEM_PARTS) begin
+                `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_WRITE/ xlen=%0d width=%0d block_write_address=0x%0h block_write_data=0x%0h", XLEN, WIDTH, mem_word_addr + mem_count, mem_idata_reg[WIDTH*(mem_count+1)-1 -: WIDTH])); `endif
+                block_write_address <= mem_word_addr + mem_count;
+                block_write_data    <= mem_idata_reg[WIDTH*(mem_count+1)-1 -: WIDTH];
+                block_write_en      <= 1'b1;
+
+                // Increment the counter for the next part
+                mem_count <= mem_count + 1;
+                mem_done  <= 1'b0;
+
+                // Memory operation completed
+                if (mem_count == MEM_PARTS - 1) begin
+                    mem_done  <= 1'b1;
+                    mem_count <= 1'b0;
                 end
-            end else if (mem_write) begin
-                // Extract the relevant WIDTH bits from mem_odata_reg and write them to the current memory address
-                `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_WRITE/ xlen=%0d width=%0d mem_word_addr=0x%0h mem_part=%0d part_data=0x%0h", XLEN, WIDTH, mem_word_addr, mem_count, mem_odata_reg[WIDTH*mem_count +: WIDTH])); `endif
-                block_write_en <= 1;
-                block_write_address <= (mem_word_addr + mem_count);
-                block_write_data <= mem_idata_reg[WIDTH*mem_count +: WIDTH];
             end
+        end
 
-            // Increment the counter for the next part
-            mem_count <= mem_count + 1;
-            mem_done  <= 0;
+        if (~mem_write && mem_read) begin
+            if (mem_count < MEM_PARTS) begin
+                if (mem_read_state == 2'b00) begin
+                    `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d block_read_address=0x%0h mem_part=%0d", XLEN, WIDTH, mem_word_addr + mem_count, mem_count)); `endif
+                    block_read_address <= mem_word_addr + mem_count;
+                    mem_read_state <= 2'b01;
+                    if (mem_count == 0) begin
+                        mem_odata_reg <= {XLEN{1'b0}};
+                    end
+                end else if (mem_read_state == 2'b10) begin
+                    `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d block_read_address=0x%0h mem_part=%0d block_read_data=%00h", XLEN, WIDTH, block_read_address, mem_count, block_read_data)); `endif
+                    mem_read_state <= 2'b00;
+                    mem_odata_reg <= mem_odata_reg | block_read_data << (WIDTH * mem_count);
 
-            // Memory operation completed
-            if (mem_count == MEM_PARTS - 1) begin
-                `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_DONE/")); `endif
-                mem_done   <= 1;
-                mem_count  <= 0;
+                    // Increment the counter for the next part
+                    mem_count <= mem_count + 1;
+                    mem_done  <= 1'b0;
+
+                    // Memory operation completed
+                    if (mem_count == MEM_PARTS - 1) begin
+                        mem_done  <= 1'b1;
+                        mem_count <= 1'b0;
+                    end
+                end else begin
+                    // Just wait for block_read_data to be valid
+                    mem_read_state <= 2'b10;
+                end
             end
         end
     end else begin
-        // When not active, ensure mem_done is deasserted
-        block_write_en <= 0;
-        mem_done <= 0;
-        mem_count  <= 0;
+        // When not active, ensure mem_done is deasserted and control signals are reset
+        mem_done            <= 1'b0;
+        mem_count           <= 0;
+        mem_read_state      <= 2'b00;
+        block_write_en      <= 1'b0;
+        block_write_address <= 0;
+        block_write_data    <= 0;
+        block_read_address  <= 0;
     end
 end
 

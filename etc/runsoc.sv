@@ -2,14 +2,14 @@
 `default_nettype none
 
 // `define LOG_UNKNOWN_INST
-// `define LOG_CPU
-// `define LOG_MEM_INTERFACE
+`define LOG_CPU
 // `define LOG_REG
-// `define LOG_BIOS
-// `define LOG_MEMORY
+`define LOG_BIOS
+`define LOG_MEM_INTERFACE
+`define LOG_MEMORY
 // `define LOG_MMIO
 // `define LOG_CLOCKED
-// `define LOG_SWITCH
+`define LOG_SWITCH
 `define LOG_SWITCH_MAP
 // `define LOG_UART
 // `define LOG_CSR
