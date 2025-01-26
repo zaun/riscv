@@ -11,12 +11,12 @@
 `default_nettype none
 
 // Include necessary modules
-`include "src/cpu.sv"
-`include "src/tl_ul_bios.sv"
-`include "src/tl_memory.sv"
-`include "src/tl_ul_output.sv"
-`include "src/tl_switch.sv"
-`include "src/tl_ul_uart.sv"
+`include "cpu.sv"
+`include "tl_ul_bios.sv"
+`include "tl_memory.sv"
+`include "tl_ul_output.sv"
+`include "tl_switch.sv"
+`include "tl_ul_uart.sv"
 
 
 `ifndef XLEN

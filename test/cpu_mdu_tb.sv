@@ -1,7 +1,7 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-`include "src/cpu_mdu.sv"
+`include "cpu_mdu.sv"
 
 `ifndef XLEN
 `define XLEN 32

@@ -1,3 +1,5 @@
+`ifndef __BLOCK_RAM__
+`define __BLOCK_RAM__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // block_ram Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,7 +132,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/log.sv"
+`include "log.sv"
 
 module block_ram #(
     parameter int SIZE  = 1024,
@@ -145,13 +147,17 @@ module block_ram #(
 	output reg  [WIDTH-1:0]   					read_data
 );
 
+wire gnd, vcc;
+assign gnd = 1'b0;
+assign vcc = 1'b1;
+
 initial begin
     `ASSERT((WIDTH >= 8), "WIDTH must be at least 8 bits.");
     `ASSERT((WIDTH % 8 == 0), "WIDTH must be divisible by 8 to ensure byte alignment.");
     `ASSERT((SIZE % (WIDTH / 8) == 0), "SIZE must be a multiple of WIDTH/8 to ensure proper byte alignment.");
 end
 
-(* ram_style = "block" *)
+(* ram_style = "distributed" *)
 reg [WIDTH-1:0] memory[(SIZE/(WIDTH/8)) - 1:0];
 
 always @(posedge clk or posedge reset) begin
@@ -169,3 +175,4 @@ always @(posedge clk) begin
 end
 endmodule
 
+`endif // __BLOCK_RAM__

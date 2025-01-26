@@ -1,3 +1,5 @@
+`ifndef __CPU_BMU__
+`define __CPU_BMU__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ALU Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -12,9 +14,9 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-// -----------------------------
+// ──────────────────────────
 // BMU Operation Encoding
-// -----------------------------
+// ──────────────────────────
 `define BMU_CLZ       6'b000000 // 0  Count Leading Zeros
 `define BMU_CTZ       6'b000001 // 1  Count Trailing Zeros
 `define BMU_CPOP      6'b000010 // 2  Count Population (Set Bits)
@@ -73,29 +75,29 @@
 module cpu_bmu #(
     parameter XLEN = 32
 ) (
-    input  logic [XLEN-1:0] operand_a,
-    input  logic [XLEN-1:0] operand_b,
-    input  logic [5:0]      control,
-    output logic [XLEN-1:0] result
+    input  wire [XLEN-1:0] operand_a,
+    input  wire [XLEN-1:0] operand_b,
+    input  wire [5:0]      control,
+    output reg  [XLEN-1:0] result
 );
 
-// -----------------------------
+// ──────────────────────────
 // Shift Bits Calculation
-// -----------------------------
+// ──────────────────────────
 localparam SHIFT_BITS = $clog2(XLEN); // 5 for XLEN=32, 6 for XLEN=64
 
-// -----------------------------
+// ──────────────────────────
 // Internal Signals for Signed Comparisons
-// -----------------------------
+// ──────────────────────────
 logic signed [XLEN-1:0] operand_a_signed;
 assign operand_a_signed = operand_a;
 
 logic signed [XLEN-1:0] operand_b_signed;
 assign operand_b_signed = operand_b;
 
-// -----------------------------
+// ──────────────────────────
 // Helper functions
-// -----------------------------
+// ──────────────────────────
 logic [XLEN-1:0] temp_operand;  // Bit counting register
 
 function automatic [XLEN-1:0] shuffle(input [XLEN-1:0] data);
@@ -587,3 +589,5 @@ always_comb begin
 end
 
 endmodule
+
+`endif // __CPU_BMU__

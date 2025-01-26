@@ -1,3 +1,5 @@
+`ifndef __CPU_MDU__
+`define __CPU_MDU__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // MDU Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -12,9 +14,11 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-// -----------------------------
+`include "log.sv"
+
+// ──────────────────────────
 // MDU Operation Encoding
-// -----------------------------
+// ──────────────────────────
 `define MDU_MUL    3'b000 // 0 Multiply two signed operands
 `define MDU_MULH   3'b001 // 1 Multiply high signed operands
 `define MDU_MULHSU 3'b010 // 2 Multiply high signed and unsigned operands
@@ -27,27 +31,28 @@
 module cpu_mdu #(
     parameter XLEN = 32
 ) (
-    input  logic              clk,
-    input  logic              reset,
-    input  logic [XLEN-1:0]   operand_a,
-    input  logic [XLEN-1:0]   operand_b,
-    input  logic [2:0]        control,    // Encoded M-extension operation
-    input  logic              start,      // Start signal for the MDU
-    output logic [XLEN-1:0]   result,
-    output logic              ready       // High when MDU completes
+    input  wire              clk,
+    input  wire              reset,
+
+    input  wire [XLEN-1:0]   operand_a,
+    input  wire [XLEN-1:0]   operand_b,
+    input  wire [2:0]        control,    // Encoded M-extension operation
+    input  wire              start,      // Start signal for the MDU
+    output reg  [XLEN-1:0]   result,
+    output reg               ready       // High when MDU completes
 );
 
-// ----------------------------------------------------
+// ──────────────────────────
 // Internally, handle signed versions of operand_a/b
-// ----------------------------------------------------
+// ──────────────────────────
 logic signed [XLEN-1:0] operand_a_signed;
 logic signed [XLEN-1:0] operand_b_signed;
 assign operand_a_signed = operand_a;
 assign operand_b_signed = operand_b;
 
-// ----------------------------------------------------
+// ──────────────────────────
 // Internal signals
-// ----------------------------------------------------
+// ──────────────────────────
 logic signed [2*XLEN-1:0] mul_result;
 logic signed [XLEN-1:0]   div_result;
 logic signed [XLEN-1:0]   rem_result;
@@ -55,9 +60,9 @@ logic [5:0]               op_reg;
 logic                     mdu_active;
 logic [5:0]               counter;
 
-// ----------------------------------------------------
+// ──────────────────────────
 // MDU State Machine
-// ----------------------------------------------------
+// ──────────────────────────
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         mdu_active <= 1'b0;
@@ -80,27 +85,27 @@ always_ff @(posedge clk or posedge reset) begin
             // Initialize multiplication / division
             case (control)
                 `MDU_MUL: begin // MUL (signed x signed)
-                    `ifdef LOG $display("[mdu] MUL a=0x%00h b=0x%00h", operand_a_signed, operand_b_signed); `endif
+                    `ifdef LOG_MDU `LOG("mdu", (" MUL a=0x%00h b=0x%00h", operand_a_signed, operand_b_signed)); `endif
                     mul_result <= { {XLEN{operand_a_signed[XLEN-1]}}, operand_a_signed }
                                 * { {XLEN{operand_b_signed[XLEN-1]}}, operand_b_signed };
                 end
                 `MDU_MULH: begin // MULH (signed x signed high)
-                    `ifdef LOG $display("[alu] MULH a=0x%00h b=0x%00h", operand_a_signed, operand_b_signed); `endif
+                    `ifdef LOG_MDU `LOG("mdu", (" MULH a=0x%00h b=0x%00h", operand_a_signed, operand_b_signed)); `endif
                     mul_result <= { {XLEN{operand_a_signed[XLEN-1]}}, operand_a_signed }
                                 * { {XLEN{operand_b_signed[XLEN-1]}}, operand_b_signed };
                 end
                 `MDU_MULHSU: begin // MULHSU (signed x unsigned high)
-                    `ifdef LOG $display("[alu] MULHSU a=0x%00h b=0x%00h", operand_a_signed, operand_b_signed); `endif
+                    `ifdef LOG_MDU `LOG("mdu", (" MULHSU a=0x%00h b=0x%00h", operand_a_signed, operand_b_signed)); `endif
                     mul_result <= { {XLEN{operand_a_signed[XLEN-1]}}, operand_a_signed }
                                 * { {XLEN{1'b0}}, operand_b };
                 end
                 `MDU_MULHU: begin // MULHU (unsigned x unsigned high)
-                    `ifdef LOG $display("[alu] MULHU a=0x%00h b=0x%00h", operand_a_signed, operand_b_signed); `endif
+                    `ifdef LOG_MDU `LOG("mdu", (" MULHU a=0x%00h b=0x%00h", operand_a_signed, operand_b_signed)); `endif
                     mul_result <= { {XLEN{1'b0}}, operand_a }
                                 * { {XLEN{1'b0}}, operand_b };
                 end
                 `MDU_DIV: begin // DIV (signed ÷ signed)
-                    `ifdef LOG $display("[alu] DIVU a=0x%00h b=0x%00h", operand_a, operand_b); `endif
+                    `ifdef LOG_MDU `LOG("mdu", (" DIVU a=0x%00h b=0x%00h", operand_a, operand_b)); `endif
                     if (operand_b != 0) begin
                         div_result <= operand_a_signed / operand_b_signed;
                         rem_result <= operand_a_signed % operand_b_signed;
@@ -113,7 +118,7 @@ always_ff @(posedge clk or posedge reset) begin
                     end
                 end
                 `MDU_DIVU: begin // DIVU (unsigned ÷ unsigned)
-                    `ifdef LOG $display("[alu] DIV a=0x%00h b=0x%00h", operand_a, operand_b); `endif
+                    `ifdef LOG_MDU `LOG("mdu", (" DIV a=0x%00h b=0x%00h", operand_a, operand_b)); `endif
                     if (operand_b != 0) begin
                         div_result <= operand_a / operand_b;
                         rem_result <= operand_a % operand_b;
@@ -123,7 +128,7 @@ always_ff @(posedge clk or posedge reset) begin
                     end
                 end
                 `MDU_REM: begin // REM (signed remainder)
-                    `ifdef LOG $display("[alu] REM a=0x%00h b=0x%00h", operand_a, operand_b); `endif
+                    `ifdef LOG_MDU `LOG("mdu", (" REM a=0x%00h b=0x%00h", operand_a, operand_b)); `endif
                     if (operand_b != 0) begin
                         rem_result <= operand_a_signed % operand_b_signed;
                     end else begin
@@ -131,7 +136,7 @@ always_ff @(posedge clk or posedge reset) begin
                     end
                 end
                 `MDU_REMU: begin // REMU (unsigned remainder)
-                    `ifdef LOG $display("[alu] REMU a=0x%00h b=0x%00h", operand_a, operand_b); `endif
+                    `ifdef LOG_MDU `LOG("mdu", (" REMU a=0x%00h b=0x%00h", operand_a, operand_b)); `endif
                     if (operand_b != 0) begin
                         rem_result <= operand_a % operand_b;
                     end else begin
@@ -171,3 +176,5 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 endmodule
+
+`endif // __CPU_MDU__

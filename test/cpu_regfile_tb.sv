@@ -3,7 +3,7 @@
 
 // `define LOG_REG
 
-`include "src/cpu_regfile.sv"
+`include "cpu_regfile.sv"
 
 `ifndef XLEN
 `define XLEN 32

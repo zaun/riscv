@@ -1,3 +1,5 @@
+`ifndef __CPU__
+`define __CPU__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // rv_cpu Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,19 +84,19 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/instructions.sv"
-`include "src/cpu_alu.sv"
-`include "src/cpu_insdecode.sv"
-`include "src/tl_interface.sv"
-`include "src/cpu_regfile.sv"
+`include "instructions.sv"
+`include "cpu_alu.sv"
+`include "cpu_insdecode.sv"
+`include "tl_interface.sv"
+`include "cpu_regfile.sv"
 `ifdef SUPPORT_ZICSR
-`include "src/cpu_csr.sv"
+`include "cpu_csr.sv"
 `endif
 `ifdef SUPPORT_M
-`include "src/cpu_mdu.sv"
+`include "cpu_mdu.sv"
 `endif
 `ifdef SUPPORT_B
-`include "src/cpu_bmu.sv"
+`include "cpu_bmu.sv"
 `endif
 
 module rv_cpu #(
@@ -143,17 +145,19 @@ module rv_cpu #(
 
     `ifdef DEBUG
     // Debug output
-    ,output wire                 dbg_halt
-    ,output wire [XLEN-1:0]      dbg_pc
-    ,output wire [XLEN-1:0]      dbg_x1
-    ,output wire [XLEN-1:0]      dbg_x2
-    ,output wire [XLEN-1:0]      dbg_x3
+    ,output wire                  dbg_halt
+    ,output wire [XLEN-1:0]       dbg_pc
+    ,output wire [XLEN-1:0]       dbg_x1
+    ,output wire [XLEN-1:0]       dbg_x2
+    ,output wire [XLEN-1:0]       dbg_x3
     `endif
 );
 
 localparam WSTRB_WIDTH = XLEN / 8; // Number of bytes for mem write mask
 
+// ──────────────────────────
 // State Definitions
+// ──────────────────────────
 typedef enum logic [3:0] {
     STATE_RESET = 4'b0000,  // CPU is rest eithe by the user or some fault
     STATE_IF    = 4'b0001,  // Instruction Fetch
@@ -176,7 +180,9 @@ typedef enum logic [1:0] {
 } cpu_work_unit_t;
 cpu_work_unit_t work_unit;
 
+// ──────────────────────────
 // Trap cause
+// ──────────────────────────
 typedef enum logic [3:0] {
     TRAP_UNKNOWN,       // Default, unknown cause
     TRAP_UNSUPPORTED,   // XLEN not supported
@@ -191,7 +197,9 @@ typedef enum logic [3:0] {
 } trap_cause_t;
 trap_cause_t trap_cause;
 
+// ──────────────────────────
 // Internal Registers and Signals
+// ──────────────────────────
 logic [XLEN-1:0] pc;
 logic [31:0]     instr;
 logic            halt;
@@ -203,7 +211,9 @@ logic            mem_wait; // memory loading
 assign trap = trap_reg;
 assign test = state;
 
+// ──────────────────────────
 // Instruction Decoder Signals
+// ──────────────────────────
 logic [6:0]      opcode;
 logic [4:0]      rd;
 logic [2:0]      funct3;
@@ -212,7 +222,10 @@ logic [4:0]      rs2;
 logic [6:0]      funct7;
 logic [11:0]     funct12;
 logic [XLEN-1:0] imm;
+
+// ──────────────────────────
 // Control Signals
+// ──────────────────────────
 logic            is_mem, is_op_imm, is_op;
 logic            is_lui, is_auipc, is_branch, is_jal, is_jalr;
 logic            is_system;
@@ -220,7 +233,9 @@ logic            is_system;
 logic            is_mul_div;
 `endif
 
+// ──────────────────────────
 // Instantiate Instruction Decoder
+// ──────────────────────────
 cpu_insdecode #(.XLEN(XLEN)) instr_decoder_inst (
     .instr    (instr),
     .opcode   (opcode),
@@ -245,7 +260,9 @@ cpu_insdecode #(.XLEN(XLEN)) instr_decoder_inst (
     `endif
 );
 
+// ──────────────────────────
 // Register File Signals
+// ──────────────────────────
 logic [4:0]      rs1_addr, rs2_addr, rd_addr;
 logic [XLEN-1:0] rs1_data, rs2_data;
 logic [XLEN-1:0] rd_data;
@@ -255,7 +272,9 @@ logic            rd_write_en;
 logic [XLEN-1:0] dbg_rf_x1, dbg_rf_x2, dbg_rf_x3;
 `endif
 
+// ──────────────────────────
 // Instantiate Register File
+// ──────────────────────────
 cpu_regfile #(.XLEN(XLEN)) reg_file_inst (
     .clk        (clk),
     .reset      (reset),
@@ -282,7 +301,9 @@ assign dbg_pc   = pc;
 assign dbg_halt = halt;
 `endif
 
+// ──────────────────────────
 // ALU Signals
+// ──────────────────────────
 logic [XLEN-1:0] alu_operand_a, alu_operand_b;
 logic [3:0]      alu_control;
 logic [XLEN-1:0] alu_result;
@@ -290,7 +311,9 @@ logic            alu_zero;
 logic            alu_less_than;
 logic            alu_unsigned_less_than;
 
+// ──────────────────────────
 // Instantiate ALU
+// ──────────────────────────
 cpu_alu #(.XLEN(XLEN)) alu_inst (
     .operand_a          (alu_operand_a),
     .operand_b          (alu_operand_b),
@@ -302,7 +325,9 @@ cpu_alu #(.XLEN(XLEN)) alu_inst (
 );
 
 `ifdef SUPPORT_B
+// ──────────────────────────
 // BMU Signals
+// ──────────────────────────
 logic [XLEN-1:0] bmu_operand_a, bmu_operand_b;
 logic [3:0]      bmu_control;
 logic [XLEN-1:0] bmu_result;
@@ -316,14 +341,18 @@ cpu_alu #(.XLEN(XLEN)) bmu_inst (
 `endif
 
 `ifdef SUPPORT_M
+// ──────────────────────────
 // MDU Signals
+// ──────────────────────────
 logic [XLEN-1:0] mdu_operand_a, mdu_operand_b;
 logic [2:0]      mdu_control;
 logic [XLEN-1:0] mdu_result;
 logic            mdu_start;
 logic            mdu_ready;
 
+// ──────────────────────────
 // Instantiate MDU
+// ──────────────────────────
 cpu_mdu #(.XLEN(XLEN)) mdu_inst (
     .clk                (clk),
     .reset              (reset),
@@ -336,7 +365,9 @@ cpu_mdu #(.XLEN(XLEN)) mdu_inst (
 );
 `endif
 
+// ──────────────────────────
 // Memory Interface Signals
+// ──────────────────────────
 logic                   mem_ready;
 logic [XLEN-1:0]        mem_address;
 logic [XLEN-1:0]        mem_wdata;
@@ -350,7 +381,9 @@ logic                   mem_denied;
 logic                   mem_corrupt;
 
 
+// ──────────────────────────
 // Instantiate Memory Interface
+// ──────────────────────────
 tl_interface #(
     .XLEN(XLEN),
     .SID_WIDTH(SID_WIDTH)
@@ -394,7 +427,9 @@ tl_interface #(
 );
 
 `ifdef SUPPORT_ZICSR
+// ──────────────────────────
 // CSR Module Signals
+// ──────────────────────────
 logic [XLEN-1:0] csr_reg_rdata;
 logic            csr_reg_write_en;
 logic [11:0]     csr_reg_addr;
@@ -423,7 +458,9 @@ typedef enum logic [1:0] {
 } cpu_trap_state_t;
 cpu_state_t trap_state;
 
+// ──────────────────────────
 // Instantiate CSR Module
+// ──────────────────────────
 cpu_csr #(
     .XLEN(XLEN),
     .NMI_COUNT(NMI_COUNT),
@@ -464,10 +501,14 @@ cpu_csr #(
 );
 `endif
 
+// ──────────────────────────
 // Exception Handling Signals
+// ──────────────────────────
 logic [XLEN-1:0] trap_vector;
 
+// ──────────────────────────
 // CPU State Machine
+// ──────────────────────────
 always_ff @(posedge clk) begin
     if (reset) begin
         state               <= STATE_IF;
@@ -1331,7 +1372,9 @@ always_ff @(posedge clk) begin
 end
 
 `ifdef LOG_CPU_CLOCKED
+// ──────────────────────────
 // Debug memory reads
+// ──────────────────────────
 always_ff @(posedge clk) begin
     `LOG("rv_cpu", ("/CLK/ mem_ready=%0d mem_address=%0h mem_read=%0d mem_valid=%0d, mem_rdata=0x%0h mem_wdata=0x%0h", mem_ready, mem_address, mem_read, mem_valid, mem_rdata, mem_wdata));
     `LOG("rv_cpu", ("/CLK/ alu_operand_a=%0h alu_operand_b=%0h alu_result=%0h", alu_operand_a, alu_operand_b, alu_result));
@@ -1339,3 +1382,5 @@ end
 `endif
 
 endmodule
+
+`endif // __CPU__

@@ -72,7 +72,10 @@ bios: etc/main.c
 # Synthesis
 synthesis: src/soc.sv
 	mkdir -p ./graph
-	yosys -D SYNTHESIS -q -p "read_verilog -sv src/soc.sv; hierarchy -check; check; flatten; clean; techmap; synth_gowin -top top -noabc9 -json synthesis.json"
+	yosys -D SYNTHESIS -q -p "read_verilog -sv -I src/ src/soc.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -noabc9 -json synthesis.json"
+
+stat:
+	yosys -D SYNTHESIS -p "read_verilog -sv src/soc.sv; hierarchy -check; check; stat"
 
 # Place and Route
 bitstream: synthesis
@@ -104,12 +107,14 @@ bios2: etc/main.c
 # Synthesis
 synthesis2: src/soc_simple.sv
 	mkdir -p ./graph
-	# yosys -D SYNTHESIS -p "read_verilog -sv src/soc_simple.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -json synthesis.json"
-	yosys -D SYNTHESIS -q -p "read_verilog -sv src/soc_simple.sv; hierarchy -check; check; flatten; clean; techmap; synth_gowin -top top -noabc9 -json synthesis.json"
+	yosys -D SYNTHESIS -q -p "read_verilog -sv -I src/ src/soc_simple.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -noabc9 -json synthesis.json"
+
+stat2:
+	yosys -D SYNTHESIS -p "read_verilog -sv src/soc_simple.sv; hierarchy -check; check; stat"
 
 # Place and Route
 bitstream2: synthesis2
-	nextpnr-himbaechel --json synthesis.json --write bitstream.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=etc/boards/${BOARD}.cst
+	nextpnr-himbaechel --json synthesis.json --write bitstream.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=etc/boards/${BOARD}.cst --placed-svg graph/soc2_place.svg --routed-svg graph/soc2_routed.svg
 
 # Generate Bitstream
 out2: bitstream2

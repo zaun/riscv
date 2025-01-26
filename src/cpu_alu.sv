@@ -1,3 +1,5 @@
+`ifndef __CPU_ALU__
+`define __CPU_ALU__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ALU Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,7 +40,7 @@
  * ## Operation Encoding
  * ```
  * Control Signal | Operation
- * -------------- | --------------------------------------------------------
+ * ────────────── | ────────────────────────────────────────────────────────
  * `0000`         | Add two operands
  * `0001`         | Subtract operand_b from operand_a
  * `0010`         | Bitwise AND of two operands
@@ -67,21 +69,21 @@
  * │                │       └─────▼─────┘  └─────▼─────┘  └─────▼─────┘  └─────▼─────┘  │
  * │                │             │              │              │              │        │
  * │                │             │              │              │              │        │
- * │    ┌─────────--▼─────────┐   │              │              │              │        │
+ * │    ┌───────────▼─────────┐   │              │              │              │        │
  * │    │ Unsigned Operations ◀───█─────────────┤│├─────────────█              │        │
- * │    └─────────--▼─────────┘   │              │              │              │        │
+ * │    └───────────▼─────────┘   │              │              │              │        │
  * │                │             │              │              │              │        │
- * │    ┌─────────--▼─────────┐   │              │              │              │        │
+ * │    ┌───────────▼─────────┐   │              │              │              │        │
  * │    │ Signed Operations   ◀──┤│├─────────────█─────────────┤│├─────────────█        │
- * │    └─────────--▼─────────┘   │              │              │              │        │
+ * │    └───────────▼─────────┘   │              │              │              │        │
  * │                │             │              │              │              │        │
- * │    ┌─────────--▼─────────┐   │              │              │              │        │
+ * │    ┌───────────▼─────────┐   │              │              │              │        │
  * │    │ Arithmetic Shift    ◀──┤│├─────────────█──────────────█              │        │
- * │    └─────────--▼─────────┘   │              │              │              │        │
+ * │    └───────────▼─────────┘   │              │              │              │        │
  * │                │             │              │              │              │        │
- * │    ┌─────────--▼─────────┐   │              │              │              │        │
+ * │    ┌───────────▼─────────┐   │              │              │              │        │
  * │    │ Result              │   │              │              │              │        │
- * │    └─────────--▼─────────┘   │              │              │              │        │
+ * │    └───────────▼─────────┘   │              │              │              │        │
  * │                │             │              │              │              │        │
  * │                │             │              │              │              │        │
  * │ Outputs:       │             │              │              │              │        │
@@ -99,9 +101,9 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-// ────────────────────────--
+// ──────────────────────────
 // ALU Operation Encoding
-// ────────────────────────--
+// ──────────────────────────
 `define ALU_ADD  4'b0000 // 0  Add two operands
 `define ALU_SUB  4'b0001 // 1  Subtract operand_b from operand_a
 `define ALU_AND  4'b0010 // 2  Bitwise AND of two operands
@@ -116,23 +118,23 @@
 module cpu_alu #(
     parameter XLEN = 32
 ) (
-    input  logic [XLEN-1:0] operand_a,
-    input  logic [XLEN-1:0] operand_b,
-    input  logic [3:0]      control,
-    output logic [XLEN-1:0] result,
-    output logic            zero,
-    output logic            less_than,
-    output logic            unsigned_less_than
+    input  wire [XLEN-1:0] operand_a,
+    input  wire [XLEN-1:0] operand_b,
+    input  wire [3:0]      control,
+    output reg  [XLEN-1:0] result,
+    output reg             zero,
+    output reg             less_than,
+    output reg             unsigned_less_than
 );
 
-// ────────────────────────--
+// ──────────────────────────
 // Shift Bits Calculation
-// ────────────────────────--
+// ──────────────────────────
 localparam SHIFT_BITS = $clog2(XLEN); // 5 for XLEN=32, 6 for XLEN=64
 
-// ────────────────────────--
+// ──────────────────────────
 // Internal Signals for Signed Comparisons
-// ────────────────────────--
+// ──────────────────────────
 logic signed [XLEN-1:0] operand_a_signed;
 assign operand_a_signed = operand_a;
 
@@ -157,9 +159,9 @@ always_comb begin
     endcase
 end
 
-// ────────────────────────--
+// ──────────────────────────
 // Flag Assignments
-// ────────────────────────--
+// ──────────────────────────
 
 // Zero Flag: High if result is zero
 assign zero                = (result == {XLEN{1'b0}});
@@ -169,3 +171,5 @@ assign less_than           = (operand_a_signed < operand_b_signed); // Signed Co
 assign unsigned_less_than  = (operand_a < operand_b);               // Unsigned Comparison
 
 endmodule
+
+`endif // __CPU_ALU__

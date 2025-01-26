@@ -4,7 +4,7 @@
 `define DEBUG // Turn on debugging ports
 // `define LOG_MEMORY
 
-`include "src/tl_memory.sv"
+`include "tl_memory.sv"
 
 `ifndef XLEN
 `define XLEN 32

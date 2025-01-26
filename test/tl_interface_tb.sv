@@ -5,8 +5,8 @@
 // `define LOG_MEM_INTERFACE
 // `define LOG_MEMORY
 
-`include "src/tl_interface.sv"
-`include "src/tl_memory.sv"
+`include "tl_interface.sv"
+`include "tl_memory.sv"
 
 `ifndef XLEN
 `define XLEN 32

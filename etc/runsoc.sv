@@ -15,7 +15,7 @@
 // `define LOG_CSR
 
 // Only include the SOC
-`include "src/soc_simple.sv"
+`include "soc_simple.sv"
 
 // Included to see UART output
 `include "test/zz_uart_baud_monitor.sv"

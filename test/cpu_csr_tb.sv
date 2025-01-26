@@ -5,7 +5,7 @@
 `define XLEN 32
 `endif
 
-`include "src/cpu_csr.sv"
+`include "cpu_csr.sv"
 
 
 module cpu_csr_tb;

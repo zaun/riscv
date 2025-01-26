@@ -1,3 +1,5 @@
+`ifndef __CPU_REGFILE__
+`define __CPU_REGFILE__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Register File Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +22,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/log.sv"
+`include "log.sv"
 
 module cpu_regfile #(
     parameter XLEN = 32  // Data width: 32 or 64 bits
@@ -117,3 +119,5 @@ assign dbg_x2 = reg_array[2];
 assign dbg_x3 = reg_array[3];
 
 endmodule
+
+`endif // __CPU_REGFILE__

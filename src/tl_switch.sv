@@ -1,3 +1,5 @@
+`ifndef __TL_SWITCH__
+`define __TL_SWITCH__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // tl_switch Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -10,7 +12,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/log.sv"
+`include "log.sv"
 
 module tl_switch #(
     parameter NUM_INPUTS    = 4,
@@ -26,7 +28,7 @@ module tl_switch #(
     // TileLink A Channel - Masters
     // ======================
     input  wire  [NUM_INPUTS-1:0]             a_valid,      // Indicates that each master has a valid request
-    output logic [NUM_INPUTS-1:0]             a_ready,      // Indicates that the switch has accepted requests from each master
+    output reg   [NUM_INPUTS-1:0]             a_ready,      // Indicates that the switch has accepted requests from each master
     input  wire  [NUM_INPUTS*3-1:0]           a_opcode,     // Operation codes for each master’s request
     input  wire  [NUM_INPUTS*3-1:0]           a_param,      // Additional parameters for each master’s request
     input  wire  [NUM_INPUTS*3-1:0]           a_size,       // Size of each request in log2(Bytes per beat).
@@ -38,34 +40,34 @@ module tl_switch #(
     // ======================
     // TileLink D Channel - Masters
     // ======================
-    output logic [NUM_INPUTS-1:0]            d_valid,       // Indicates that the switch has a valid response for each master
+    output reg   [NUM_INPUTS-1:0]            d_valid,       // Indicates that the switch has a valid response for each master
     input  wire  [NUM_INPUTS-1:0]            d_ready,       // Indicates that each master is ready to accept responses
-    output logic [NUM_INPUTS*3-1:0]          d_opcode,      // Response codes for each master’s response
-    output logic [NUM_INPUTS*2-1:0]          d_param,       // Additional parameters for each master’s response
-    output logic [NUM_INPUTS*3-1:0]          d_size,        // Size of each request in log2(Bytes per beat)
-    output logic [NUM_INPUTS*SID_WIDTH-1:0]  d_source,      // Source IDs corresponding to each master’s response
-    output logic [NUM_INPUTS*XLEN-1:0]       d_data,        // Data payloads for read responses from each slave
-    output logic [NUM_INPUTS-1:0]            d_corrupt,     // Indicates corruption in the data payload for each slave’s response
-    output logic [NUM_INPUTS-1:0]            d_denied,      // Indicates that the request was denied for each slave’s response
+    output reg   [NUM_INPUTS*3-1:0]          d_opcode,      // Response codes for each master’s response
+    output reg   [NUM_INPUTS*2-1:0]          d_param,       // Additional parameters for each master’s response
+    output reg   [NUM_INPUTS*3-1:0]          d_size,        // Size of each request in log2(Bytes per beat)
+    output reg   [NUM_INPUTS*SID_WIDTH-1:0]  d_source,      // Source IDs corresponding to each master’s response
+    output reg   [NUM_INPUTS*XLEN-1:0]       d_data,        // Data payloads for read responses from each slave
+    output reg   [NUM_INPUTS-1:0]            d_corrupt,     // Indicates corruption in the data payload for each slave’s response
+    output reg   [NUM_INPUTS-1:0]            d_denied,      // Indicates that the request was denied for each slave’s response
 
     // ======================
     // A Channel - Slaves
     // ======================
-    output logic [NUM_OUTPUTS-1:0]           s_a_valid,      //
+    output reg   [NUM_OUTPUTS-1:0]           s_a_valid,      //
     input  wire  [NUM_OUTPUTS-1:0]           s_a_ready,      //
-    output logic [NUM_OUTPUTS*3-1:0]         s_a_opcode,     // 
-    output logic [NUM_OUTPUTS*3-1:0]         s_a_param,      // 
-    output logic [NUM_OUTPUTS*3-1:0]         s_a_size,       // 
-    output logic [NUM_OUTPUTS*SID_WIDTH-1:0] s_a_source,     // 
-    output logic [NUM_OUTPUTS*XLEN-1:0]      s_a_address,    // 
-    output logic [NUM_OUTPUTS*(XLEN/8)-1:0]  s_a_mask,       // 
-    output logic [NUM_OUTPUTS*XLEN-1:0]      s_a_data,       // 
+    output reg   [NUM_OUTPUTS*3-1:0]         s_a_opcode,     // 
+    output reg   [NUM_OUTPUTS*2-1:0]         s_a_param,      // 
+    output reg   [NUM_OUTPUTS*3-1:0]         s_a_size,       // 
+    output reg   [NUM_OUTPUTS*SID_WIDTH-1:0] s_a_source,     // 
+    output reg   [NUM_OUTPUTS*XLEN-1:0]      s_a_address,    // 
+    output reg   [NUM_OUTPUTS*(XLEN/8)-1:0]  s_a_mask,       // 
+    output reg   [NUM_OUTPUTS*XLEN-1:0]      s_a_data,       // 
 
     // ======================
     // D Channel - Slaves
     // ======================
     input  wire  [NUM_OUTPUTS-1:0]            s_d_valid,     // 
-    output logic [NUM_OUTPUTS-1:0]            s_d_ready,     // 
+    output reg   [NUM_OUTPUTS-1:0]            s_d_ready,     // 
     input  wire  [NUM_OUTPUTS*3-1:0]          s_d_opcode,    // 
     input  wire  [NUM_OUTPUTS*2-1:0]          s_d_param,     // 
     input  wire  [NUM_OUTPUTS*3-1:0]          s_d_size,      // 
@@ -153,8 +155,10 @@ for (al_idx = 0; al_idx < NUM_OUTPUTS; al_idx++) begin : lookup_table
         lookup_top_addr[al_idx]  = {1'b0, base_addr[al_idx*XLEN +: XLEN]} +
                                    {1'b0, addr_mask[al_idx*XLEN +: XLEN]};
 
+        `ASSERT((!lookup_top_addr[al_idx][XLEN]), "Carry-over detected in lookup_top_addr");
+
         `ifdef LOG_SWITCH_MAP
-        $display(format_str, al_idx, lookup_base_addr[al_idx][XLEN-1:0], lookup_top_addr[al_idx][XLEN-1:0]);
+        `LOG("tl_switch", (format_str, al_idx, lookup_base_addr[al_idx][XLEN-1:0], lookup_top_addr[al_idx][XLEN-1:0]));
         `endif
     end
 end
@@ -180,7 +184,7 @@ for (ad_idx = 0; ad_idx < NUM_INPUTS; ad_idx++) begin : master_decode
             if ((a_address[ad_idx*XLEN +: XLEN] >= lookup_base_addr[al_lookup]) &&
                 (a_address[ad_idx*XLEN +: XLEN] <= lookup_top_addr[al_lookup])) begin
                 master_slave_idx[ad_idx]      = {1'b0, al_lookup[NUM_OUTPUTS_LOG2-1:0]};
-                master_mapped_address[ad_idx] = a_address[ad_idx*XLEN +: XLEN] - lookup_base_addr[al_lookup];
+                master_mapped_address[ad_idx] = a_address[ad_idx*XLEN +: XLEN] - lookup_base_addr[al_lookup][XLEN-1:0];
             end
         end
     end
@@ -262,7 +266,7 @@ always_ff @(posedge clk or posedge reset) begin
                             end
 
                             else begin
-                                $display("master_idx=%0d tracking_idx=%0d", master_idx, tracking_idx);
+                                `ifdef LOG_SWITCH `LOG("tl_switch", ("master_idx=%0d tracking_idx=%0d", master_idx, tracking_idx)); `endif
                             end
                         end
                     end
@@ -405,3 +409,5 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 endmodule
+
+`endif // __TL_SWITCH__

@@ -1,3 +1,5 @@
+`ifndef __TL_UL_BIOS__
+`define __TL_UL_BIOS__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // tl_ul_bios Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -9,7 +11,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/log.sv"
+`include "log.sv"
 
 module tl_ul_bios #(
     parameter int XLEN = 32,
@@ -34,11 +36,11 @@ module tl_ul_bios #(
     // TileLink D Channel
     output reg                  tl_d_valid,
     input  wire                 tl_d_ready,
-    output reg [2:0]            tl_d_opcode,
-    output reg [1:0]            tl_d_param,
-    output reg [2:0]            tl_d_size,
-    output reg [SID_WIDTH-1:0]  tl_d_source,
-    output reg [XLEN-1:0]       tl_d_data,
+    output reg  [2:0]           tl_d_opcode,
+    output reg  [1:0]           tl_d_param,
+    output reg  [2:0]           tl_d_size,
+    output reg  [SID_WIDTH-1:0] tl_d_source,
+    output reg  [XLEN-1:0]      tl_d_data,
     output reg                  tl_d_corrupt,
     output reg                  tl_d_denied
 
@@ -488,3 +490,5 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 endmodule
+
+`endif // __TL_UL_BIOS__

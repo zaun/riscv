@@ -1,3 +1,5 @@
+`ifndef __TL_MEMORY__
+`define __TL_MEMORY__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // tl_memory Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -101,8 +103,8 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/block_ram.sv"
-`include "src/log.sv"
+`include "block_ram.sv"
+`include "log.sv"
 
 module tl_memory #(
     parameter int XLEN = 32,
@@ -631,3 +633,5 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 endmodule
+
+`endif // __TL_MEMORY__

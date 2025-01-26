@@ -16,7 +16,7 @@
 void delay(uint32_t ms) {
     volatile uint32_t count;
     while(ms > 0) {
-        for(count = 0; count < CLOCK_MHZ * 20; count++) {
+        for(count = 0; count < 2; count++) {
             __asm__("nop");
         }
         ms--;
@@ -25,10 +25,10 @@ void delay(uint32_t ms) {
 
 int main() {
     volatile uint8_t *output = (volatile uint8_t *)(MEMORY_ADDRESS);
-    *output = 0 - 1;
+    *output = 0;
 
     while(1) {
-        *output = *output - 1;
+        *output = *output + 1;
 
         delay(1);
     }

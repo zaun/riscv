@@ -11,10 +11,10 @@
 `default_nettype none
 
 // Include necessary modules
-`include "src/cpu.sv"
-`include "src/tl_switch.sv"
-`include "src/tl_memory.sv"
-`include "src/tl_ul_bios.sv"
+`include "cpu.sv"
+`include "tl_switch.sv"
+`include "tl_memory.sv"
+`include "tl_ul_bios.sv"
 
 `ifndef XLEN
 `define XLEN 32
@@ -22,27 +22,47 @@
 
 module top
 (
-    input         CLK,              // System Clock
-    input         BTN_S1,           // Button for reset
-    output [5:0]  LED,              // LEDs
-    input         UART_RX,          // Receive line
-    output        UART_TX,          // Transmit line
+    CLK,
+    BTN_S1,
+    LED,
+    UART_RX,
+    UART_TX,
 
-    output        O_sdram_clk,
-    output        O_sdram_cke,
-    output        O_sdram_cs_n,     // chip select
-    output        O_sdram_cas_n,    // columns address select
-    output        O_sdram_ras_n,    // row address select
-    output        O_sdram_wen_n,    // write enable
-    inout  [31:0] IO_sdram_dq,      // 32 bit bidirectional data bus
-    output [10:0] O_sdram_addr,     // 11 bit multiplexed address bus
-    output [1:0]  O_sdram_ba,       // two banks
-    output [3:0]  O_sdram_dqm       // 32/4
+    O_sdram_clk,
+    O_sdram_cke,
+    O_sdram_cs_n,
+    O_sdram_cas_n,
+    O_sdram_ras_n,
+    O_sdram_wen_n,
+    IO_sdram_dq,
+    O_sdram_addr,
+    O_sdram_ba,
+    O_sdram_dqm
 );
 
-// ====================================
+// ──────────────────────────
+// Port Type Declarations
+// ──────────────────────────
+input  wire        CLK;              // System Clock
+input  wire        BTN_S1;           // Button for reset
+output reg  [5:0]  LED;              // LEDs
+input  wire        UART_RX;          // Receive line
+output reg         UART_TX;          // Transmit line
+
+output reg         O_sdram_clk;
+output reg         O_sdram_cke;
+output reg         O_sdram_cs_n;     // chip select
+output reg         O_sdram_cas_n;    // columns address select
+output reg         O_sdram_ras_n;    // row address select
+output reg         O_sdram_wen_n;    // write enable
+inout  wire [31:0] IO_sdram_dq;      // 32 bit bidirectional data bus
+output reg  [10:0] O_sdram_addr;     // 11 bit multiplexed address bus
+output reg  [1:0]  O_sdram_ba;       // two banks
+output reg  [3:0]  O_sdram_dqm;      // 32/4
+
+// ──────────────────────────
 // Parameters
-// ====================================
+// ──────────────────────────
 parameter XLEN          = 32;
 parameter SID_WIDTH     = 8;
 parameter NUM_INPUTS    = 1;
@@ -50,9 +70,9 @@ parameter NUM_OUTPUTS   = 2;
 parameter TRACK_DEPTH   = 16;
 parameter CLK_FREQ_MHZ  = 27;
 
-// ====================================
+// ──────────────────────────
 // Clock and Reset
-// ====================================
+// ──────────────────────────
 
 wire clk;
 wire reset;
@@ -60,15 +80,15 @@ wire reset;
 assign clk   = CLK;
 assign reset = BTN_S1;
 
-// ====================================
+// ──────────────────────────
 // LEDs
-// ====================================
+// ──────────────────────────
 logic [5:0] leds;
 assign LED   = ~leds;
 
-// ====================================
+// ──────────────────────────
 // Master 1 (CPU)
-// ====================================
+// ──────────────────────────
 
 // A Channel
 wire                   cpu_tl_a_valid;
@@ -92,9 +112,9 @@ wire [XLEN-1:0]        cpu_tl_d_data;
 wire                   cpu_tl_d_corrupt;
 wire                   cpu_tl_d_denied;
 
-// ====================================
+// ──────────────────────────
 // Slave - memory
-// ====================================
+// ──────────────────────────
 
 logic [XLEN-1:0]       memory_base_address;
 logic [XLEN-1:0]       memory_size;
@@ -123,9 +143,9 @@ wire [XLEN-1:0]        memory_s_d_data;
 wire                   memory_s_d_corrupt;
 wire                   memory_s_d_denied;
 
-// ====================================
+// ──────────────────────────
 // Slave - bios
-// ====================================
+// ──────────────────────────
 
 logic [XLEN-1:0] bios_base_address;
 logic [XLEN-1:0] bios_size;
@@ -155,9 +175,9 @@ wire bios_s_d_corrupt;
 wire bios_s_d_denied;
 
 
-// ====================================
+// ──────────────────────────
 // Instantiate the TileLink Switch
-// ====================================
+// ──────────────────────────
 tl_switch #(
     .NUM_INPUTS    (NUM_INPUTS),
     .NUM_OUTPUTS   (NUM_OUTPUTS),
@@ -227,9 +247,9 @@ tl_switch #(
     .addr_mask   ({ bios_size         , memory_size          })
 );
 
-// ====================================
+// ──────────────────────────
 // Instantiate the CPU
-// ====================================
+// ──────────────────────────
 rv_cpu #(
     .MHARTID_VAL     (32'h0000_0000),
     .XLEN            (XLEN),
@@ -273,9 +293,9 @@ rv_cpu #(
     .trap          ()
 );
 
-// ====================================
+// ──────────────────────────
 // Instantiate Memory 
-// ====================================
+// ──────────────────────────
 tl_memory #(
     .XLEN           (XLEN),
     .SIZE           ('h10000),
@@ -307,9 +327,9 @@ tl_memory #(
     .tl_d_denied    (memory_s_d_denied)
 );
 
-// ====================================
+// ──────────────────────────
 // Instantiate Bios
-// ====================================
+// ──────────────────────────
 tl_ul_bios #(
     .XLEN           (XLEN),
     .SID_WIDTH      (SID_WIDTH),

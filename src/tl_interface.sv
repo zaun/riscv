@@ -1,3 +1,5 @@
+`ifndef __TL_INTERFACE__
+`define __TL_INTERFACE__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // tl_interface Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +71,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/log.sv"
+`include "log.sv"
 
 module tl_interface #(
     parameter XLEN = 32,                        // Bus data width
@@ -170,7 +172,11 @@ always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         current_source_id <= {SID_WIDTH{1'b0}};
     end else if (tl_a_valid && tl_a_ready) begin
-        current_source_id <= current_source_id + 1;
+        if (current_source_id < {SID_WIDTH{1'b1}}) begin
+            current_source_id <= (current_source_id + 1) & {SID_WIDTH{1'b1}};
+        end else begin
+            current_source_id <= {SID_WIDTH{1'b0}};
+        end
     end
 end
 
@@ -385,7 +391,7 @@ always_ff @(posedge clk or posedge reset) begin
 
                     if (tl_d_denied || tl_d_corrupt) begin
                         if (retry_count < MAX_RETRIES) begin
-                            retry_count <= retry_count + 1;
+                            retry_count <= (retry_count + 1) & {2'b11};
                             `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Response denied/corrupt, retrying (%0d/%0d)", retry_count, MAX_RETRIES)); `endif
                             next_state <= SEND_REQ;
                         end else begin
@@ -403,7 +409,7 @@ always_ff @(posedge clk or posedge reset) begin
                                 3'b001: read_data_hold <= { {(XLEN-16){1'b0}}, tl_d_data[15:0] };
                                 3'b010: read_data_hold <= { {(XLEN-32){1'b0}}, tl_d_data[31:0] };
                                 3'b011: if (XLEN >= 64) begin
-                                    read_data_hold <= { {(XLEN-64){1'b0}}, tl_d_data[64:0] };
+                                    read_data_hold <= { {(XLEN-64){1'b0}}, tl_d_data[63:0] };
                                 end
                                 default: read_data_hold <= {XLEN{1'b0}};
                             endcase
@@ -474,3 +480,5 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 endmodule
+
+`endif // __TL_INTERFACE__

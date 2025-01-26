@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 `default_nettype none
 
-`include "src/log.sv"
+`include "log.sv"
 
 module uart_baud_monitor #(
     parameter real CLK_FREQ_MHZ  = 100.0,    // System clock frequency in MHz

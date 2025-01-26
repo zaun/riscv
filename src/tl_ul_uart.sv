@@ -1,3 +1,5 @@
+`ifndef __TL_UL_UART__
+`define __TL_UL_UART__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // tl_ul_uart Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -231,7 +233,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
     
-`include "src/log.sv"
+`include "log.sv"
 
 module tl_ul_uart #(
     parameter int XLEN = 32,
@@ -922,3 +924,5 @@ always @(posedge clk or posedge reset) begin
 end
 
 endmodule
+
+`endif // __TL_UL_UART__

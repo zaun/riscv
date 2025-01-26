@@ -1,3 +1,5 @@
+`ifndef __TL_UL_OUTPUT__
+`define __TL_UL_OUTPUT__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // tl_ul_output Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +81,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "src/log.sv"
+`include "log.sv"
 
 module tl_ul_output #(
     parameter int XLEN      = 32,
@@ -388,3 +390,5 @@ always @(posedge clk or posedge reset) begin
     end
 end
 endmodule
+
+`endif // __TL_UL_OUTPUT__

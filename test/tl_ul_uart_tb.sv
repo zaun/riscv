@@ -7,14 +7,14 @@
 // `define LOG_UART
 // `define LOG_FIFO
 
-`include "src/tl_ul_uart.sv"
+`include "tl_ul_uart.sv"
 `include "test/zz_uart_baud_monitor.sv"
 
 `ifndef XLEN
 `define XLEN 32
 `endif
 
-`include "src/log.sv"
+`include "log.sv"
 
 module tl_ul_uart_tb;
 `include "test/test_macros.sv"
