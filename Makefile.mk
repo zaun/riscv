@@ -162,7 +162,7 @@ run_cpu: asm
 	python etc/scripts/bin_to_sv_mem.py etc/program.bin etc/program.sv etc/program.opcodes -m mock_mem -x 16
 	rm etc/*.o etc/program.bin etc/program.opcodes
 
-	iverilog -g2012 $(DEFINES) -o graph/cpu_runner.vvp -s cpu_runner etc/run.sv
+	iverilog -g2012 -I src/  $(DEFINES) -o graph/cpu_runner.vvp -s cpu_runner etc/run.sv
 	vvp -N graph/cpu_runner.vvp
 	mv ./cpu_runner.vcd ./graph/cpu_runner.vcd
 	rm -f graph/cpu_runner.vvp
@@ -170,7 +170,7 @@ run_cpu: asm
 run_soc: bios
 	mkdir -p ./graph
 
-	iverilog -g2012 $(DEFINES) -o graph/soc_runner.vvp -s soc_runner etc/runsoc.sv
+	iverilog -g2012 -I src/  $(DEFINES) -o graph/soc_runner.vvp -s soc_runner etc/runsoc.sv
 	vvp -N graph/soc_runner.vvp
 	mv ./soc_runner.vcd ./graph/soc_runner.vcd
 	rm -f graph/soc_runner.vvp

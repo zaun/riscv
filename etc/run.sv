@@ -291,7 +291,7 @@ initial begin
     if(dbg_halt == 1) $display("Stop reason: HALT");
     if(trap == 1) $display("Stop reason: TRAP");
     $display("Number of clock cycles: %00d pc=0x%0h", cycle_count, dbg_pc);
-    `DISPLAY_MEM_RANGE_ARRAY(mock_mem, MEM_WIDTH, 16'hFF00, 16'hFFFF);
+    `DISPLAY_MEM_RANGE_ARRAY(mock_mem.block_ram_inst, MEM_WIDTH, 16'hFF00, 16'hFFFF);
 
     $finish;
 end

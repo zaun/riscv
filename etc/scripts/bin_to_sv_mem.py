@@ -98,7 +98,7 @@ def bin_to_sv_mem(bin_file, sv_file, opcode_file=None, memory_name="mock_mem", m
                 # Example line:
                 #   mock_mem.memory['h0003] = 32'h44332211; // 0x0: add x1,x2,x3
                 f_out.write(
-                    f"{memory_name}.memory['h{mem_index:04X}] = {mem_width}'h{word_value:0{hex_digits}X};{comment}\n"
+                    f"{memory_name}.block_ram_inst.memory['h{mem_index:04X}] = {mem_width}'h{word_value:0{hex_digits}X};{comment}\n"
                 )
 
         print(f"SystemVerilog memory initialization written to {sv_file}")
