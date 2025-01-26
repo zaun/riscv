@@ -1,6 +1,8 @@
 # Test output
 graph
 
+docs/README.md.bak
+
 # App used with make run_cpu
 etc/program.sv
 

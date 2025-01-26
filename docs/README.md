@@ -51,8 +51,8 @@ The repository is organized as follows:
 
 ## Development Tools
 
-- [Icarus Verilog](https://github.com/steveicarus/iverilog)
-- [Yosys](https://github.com/YosysHQ/yosys)
+- [Icarus Verilog 12.0](https://github.com/steveicarus/iverilog)
+- [Yosys 0.49](https://github.com/YosysHQ/yosys)
 - [graphviz](https://graphviz.org) - brew install graphviz
 - [riscv-gnu-toolchain](https://github.com/riscv-collab/riscv-gnu-toolchain)
 - [openFPGALoader](https://github.com/trabucayre/openFPGALoader)
