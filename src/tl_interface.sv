@@ -319,7 +319,7 @@ always_ff @(posedge clk or posedge reset) begin
                                 if (count_wstrb_bits(cpu_wstrb) == 8 &&
                                     (cpu_wstrb[0] && cpu_wstrb[1] && cpu_wstrb[2] && cpu_wstrb[3] && cpu_wstrb[4] && cpu_wstrb[5] && cpu_wstrb[6] && cpu_wstrb[7]))
                                 begin
-                                    req_wdata <= { {(XLEN-64){1'b0}}, cpu_wdata[64:0] };
+                                    req_wdata <= { {(XLEN-64){1'b0}}, cpu_wdata[63:0] };
                                 end else begin
                                     `ifdef LOG_MEM_INTERFACE `WARN("tl_interface", ("Captured CPU Double-Word request - invalid mask b%0b", cpu_wstrb)); `endif
                                     // Invalid alignment
