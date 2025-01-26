@@ -22,11 +22,22 @@
 
 module top
 (
-    input        CLK,       // System Clock
-    input        BTN_S1,    // Button for reset
-    output [5:0] LED,       // LEDs
-    input        UART_RX,   // Receive line
-    output       UART_TX    // Transmit line
+    input         CLK,              // System Clock
+    input         BTN_S1,           // Button for reset
+    output [5:0]  LED,              // LEDs
+    input         UART_RX,          // Receive line
+    output        UART_TX,          // Transmit line
+
+    output        O_sdram_clk,
+    output        O_sdram_cke,
+    output        O_sdram_cs_n,     // chip select
+    output        O_sdram_cas_n,    // columns address select
+    output        O_sdram_ras_n,    // row address select
+    output        O_sdram_wen_n,    // write enable
+    inout  [31:0] IO_sdram_dq,      // 32 bit bidirectional data bus
+    output [10:0] O_sdram_addr,     // 11 bit multiplexed address bus
+    output [1:0]  O_sdram_ba,       // two banks
+    output [3:0]  O_sdram_dqm       // 32/4
 );
 
 // ====================================
