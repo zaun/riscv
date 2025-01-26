@@ -130,21 +130,6 @@ logic                        tracking_entry_valid      [0:TRACK_DEPTH-1]; // Hig
 a_channel_state              tracking_entry_a_state    [0:TRACK_DEPTH-1]; // Current A channel state
 d_channel_state              tracking_entry_d_state    [0:TRACK_DEPTH-1]; // Current D channel state
 
-// Initialize tracking table
-integer ti;
-initial begin
-    for (ti = 0; ti < TRACK_DEPTH; ti = ti + 1) begin
-        tracking_entry_master_idx[ti]  = {NUM_INPUTS_LOG2{1'b0}};
-        tracking_entry_slave_idx[ti]   = {NUM_OUTPUTS_LOG2+1{1'b0}};
-        tracking_entry_source_id[ti]   = {SID_WIDTH{1'b0}};
-        tracking_entry_auto_resp[ti]   = 1'b0;
-        tracking_entry_finished[ti]    = 1'b0;
-        tracking_entry_valid[ti]       = 1'b0;
-        tracking_entry_d_state[ti]     = WAIT_SLAVE_RESP;
-        tracking_entry_a_state[ti]     = WAIT_SLAVE_READY;
-    end
-end
-
 // ======================
 // Address Lookup Table
 // ======================
@@ -213,7 +198,7 @@ always_ff @(posedge clk or posedge reset) begin
         s_a_valid <= {NUM_OUTPUTS{1'b0}};
 
         // Reset the tracking table
-        for (ti = 0; ti < TRACK_DEPTH; ti = ti + 1) begin
+        for (int ti = 0; ti < TRACK_DEPTH; ti = ti + 1) begin
             tracking_entry_master_idx[ti]  <= {NUM_INPUTS_LOG2{1'b0}};
             tracking_entry_slave_idx[ti]   <= {NUM_OUTPUTS_LOG2+1{1'b0}};
             tracking_entry_source_id[ti]   <= {SID_WIDTH{1'b0}};
@@ -272,7 +257,7 @@ always_ff @(posedge clk or posedge reset) begin
 
                                 a_ready[master_idx]                     <= 1'b1;
 
-                                tracking_entry_a_state[tracking_idx]    <= WAIT_MASTER_ACK;
+                                tracking_entry_a_state[tracking_idx]    <= WAIT_SLAVE_ACK;
                                 master_slot_idx = tracking_idx;
                             end
 
@@ -326,7 +311,7 @@ end;
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         // Reset the tracking table
-        for (ti = 0; ti < TRACK_DEPTH; ti = ti + 1) begin
+        for (int ti = 0; ti < TRACK_DEPTH; ti = ti + 1) begin
             tracking_entry_finished[ti] <= 1'b0;
             tracking_entry_d_state[ti]  <= WAIT_SLAVE_RESP;
         end
