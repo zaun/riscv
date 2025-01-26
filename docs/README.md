@@ -53,6 +53,7 @@ The repository is organized as follows:
 
 - [Icarus Verilog](https://github.com/steveicarus/iverilog)
 - [Yosys](https://github.com/YosysHQ/yosys)
+- [graphviz](https://graphviz.org) - brew install graphviz
 - [riscv-gnu-toolchain](https://github.com/riscv-collab/riscv-gnu-toolchain)
 - [openFPGALoader](https://github.com/trabucayre/openFPGALoader)
 - `make`
@@ -107,6 +108,7 @@ Running `make test` will run all existing `test_*` pargets.
 
 - [RISC-V ISA list of instructions](https://riscv-software-src.github.io/riscv-unified-db/manual/html/isa/20240411/insts/add.html)
 - [RISC-V Instruction Decoder](https://luplab.gitlab.io/rvcodecjs)
+- [Tang Nano Examples](https://github.com/YosysHQ/apicula/tree/master/examples/himbaechel)
 
 ---
 
