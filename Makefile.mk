@@ -71,7 +71,8 @@ bios: etc/main.c
 
 # Synthesis
 synthesis: src/soc.sv
-	yosys -p "read_verilog -sv src/soc.sv; synth_gowin -top top -json synthesis.json"
+	mkdir -p ./graph
+	yosys -D SYNTHESIS -q -p "read_verilog -sv src/soc.sv; hierarchy -check; check; flatten; clean; techmap; synth_gowin -top top -noabc9 -json synthesis.json"
 
 # Place and Route
 bitstream: synthesis
@@ -102,7 +103,9 @@ bios2: etc/main.c
 
 # Synthesis
 synthesis2: src/soc_simple.sv
-	yosys -q -p "read_verilog -sv src/soc_simple.sv; synth_gowin -top top -json synthesis.json"
+	mkdir -p ./graph
+	# yosys -D SYNTHESIS -p "read_verilog -sv src/soc_simple.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -json synthesis.json"
+	yosys -D SYNTHESIS -q -p "read_verilog -sv src/soc_simple.sv; hierarchy -check; check; flatten; clean; techmap; synth_gowin -top top -noabc9 -json synthesis.json"
 
 # Place and Route
 bitstream2: synthesis2
@@ -115,6 +118,10 @@ out2: bitstream2
 ##
 # Develompent
 ##
+
+# Create graphs from the dot file
+graph:
+	dot -Tpng ./graph/soc.dot -O
 
 # Program Board
 load:
