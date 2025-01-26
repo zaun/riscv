@@ -105,7 +105,7 @@ initial begin
     repeat(100000) @(posedge clk);
 
     // $display("Number of clock cycles: %00d pc=0x%0h", cycle_count, uut.cpu_inst.pc);
-    // `DISPLAY_MEM_RANGE_ARRAY(soc_inst.bios_inst.memory, 8, 16'hFF00, 16'hFFFF);
+    `DISPLAY_MEM_RANGE_ARRAY(soc_inst.memory_inst.block_ram_inst, 8, 16'h0F00, 16'h0FFF);
 
     $finish;
 end
