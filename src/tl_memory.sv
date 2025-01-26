@@ -155,7 +155,6 @@ initial begin
     `ifdef LOG_MEMORY `LOG("tl_memory", ("memory address size is %00d bits", $clog2(SIZE/(WIDTH/8)))); `endif
 end
 
-
 // Local parameters
 localparam [2:0] TL_ACCESS_ACK              = 3'b000;
 localparam [2:0] TL_ACCESS_ACK_DATA         = 3'b010;
@@ -332,7 +331,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-// Capture A-Channel request
+// TileLink Interface
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         state        <= IDLE;
