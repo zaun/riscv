@@ -53,28 +53,28 @@ module tl_switch #(
     // ======================
     // A Channel - Slaves
     // ======================
-    output reg   [NUM_OUTPUTS-1:0]           s_a_valid,      //
-    input  wire  [NUM_OUTPUTS-1:0]           s_a_ready,      //
-    output reg   [NUM_OUTPUTS*3-1:0]         s_a_opcode,     // 
-    output reg   [NUM_OUTPUTS*2-1:0]         s_a_param,      // 
-    output reg   [NUM_OUTPUTS*3-1:0]         s_a_size,       // 
-    output reg   [NUM_OUTPUTS*SID_WIDTH-1:0] s_a_source,     // 
-    output reg   [NUM_OUTPUTS*XLEN-1:0]      s_a_address,    // 
-    output reg   [NUM_OUTPUTS*(XLEN/8)-1:0]  s_a_mask,       // 
-    output reg   [NUM_OUTPUTS*XLEN-1:0]      s_a_data,       // 
+    output reg   [NUM_OUTPUTS-1:0]           s_a_valid,      // Indicates that each master has a valid request
+    input  wire  [NUM_OUTPUTS-1:0]           s_a_ready,      // Indicates that the switch has accepted requests from each master
+    output reg   [NUM_OUTPUTS*3-1:0]         s_a_opcode,     // Operation codes for each master’s request 
+    output reg   [NUM_OUTPUTS*2-1:0]         s_a_param,      // Additional parameters for each master’s request 
+    output reg   [NUM_OUTPUTS*3-1:0]         s_a_size,       // Size of each request in log2(Bytes per beat). 
+    output reg   [NUM_OUTPUTS*SID_WIDTH-1:0] s_a_source,     // Source IDs for each master’s request 
+    output reg   [NUM_OUTPUTS*XLEN-1:0]      s_a_address,    // Addresses for each master’s request 
+    output reg   [NUM_OUTPUTS*(XLEN/8)-1:0]  s_a_mask,       // Write byte masks for each master’s write requests 
+    output reg   [NUM_OUTPUTS*XLEN-1:0]      s_a_data,       // Data payloads for each master’s write requests 
 
     // ======================
     // D Channel - Slaves
     // ======================
-    input  wire  [NUM_OUTPUTS-1:0]            s_d_valid,     // 
-    output reg   [NUM_OUTPUTS-1:0]            s_d_ready,     // 
-    input  wire  [NUM_OUTPUTS*3-1:0]          s_d_opcode,    // 
-    input  wire  [NUM_OUTPUTS*2-1:0]          s_d_param,     // 
-    input  wire  [NUM_OUTPUTS*3-1:0]          s_d_size,      // 
-    input  wire  [NUM_OUTPUTS*SID_WIDTH-1:0]  s_d_source,    // 
-    input  wire  [NUM_OUTPUTS*XLEN-1:0]       s_d_data,      // 
-    input  wire  [NUM_OUTPUTS-1:0]            s_d_corrupt,   // 
-    input  wire  [NUM_OUTPUTS-1:0]            s_d_denied,    // 
+    input  wire  [NUM_OUTPUTS-1:0]            s_d_valid,     // Indicates that the switch has a valid response for each master 
+    output reg   [NUM_OUTPUTS-1:0]            s_d_ready,     // Indicates that each master is ready to accept responses 
+    input  wire  [NUM_OUTPUTS*3-1:0]          s_d_opcode,    // Response codes for each master’s response 
+    input  wire  [NUM_OUTPUTS*2-1:0]          s_d_param,     // Additional parameters for each master’s response 
+    input  wire  [NUM_OUTPUTS*3-1:0]          s_d_size,      // Size of each request in log2(Bytes per beat) 
+    input  wire  [NUM_OUTPUTS*SID_WIDTH-1:0]  s_d_source,    // Source IDs corresponding to each master’s response 
+    input  wire  [NUM_OUTPUTS*XLEN-1:0]       s_d_data,      // Data payloads for read responses from each slave 
+    input  wire  [NUM_OUTPUTS-1:0]            s_d_corrupt,   // Indicates corruption in the data payload for each slave’s response 
+    input  wire  [NUM_OUTPUTS-1:0]            s_d_denied,    // Indicates that the request was denied for each slave’s response 
 
     // ======================
     // Base Addresses for Slaves
