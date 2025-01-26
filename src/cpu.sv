@@ -135,7 +135,7 @@ module rv_cpu #(
     input  wire [SID_WIDTH-1:0]  tl_d_source,
     input  wire [XLEN-1:0]       tl_d_data,
     input  wire                  tl_d_corrupt,
-    output wire                  tl_d_denied,
+    input  wire                  tl_d_denied,
 
     // Signals
     output wire                  trap,
