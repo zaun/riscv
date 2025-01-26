@@ -229,11 +229,12 @@ block_ram #(
 	.read_data      (block_read_data)
 );
 
-reg                                 block_write_en;
-reg [$clog2(SIZE/(WIDTH/8)) - 1:0]  block_write_address;
-reg [WIDTH-1:0]                     block_write_data;
-reg [$clog2(SIZE/(WIDTH/8)) - 1:0]  block_read_address;
-reg [WIDTH-1:0]                     block_read_data;
+localparam BLOCK_ADDRESS_SIZE = $clog2(SIZE/(WIDTH/8));
+reg                             block_write_en;
+reg [BLOCK_ADDRESS_SIZE - 1:0]  block_write_address;
+reg [WIDTH-1:0]                 block_write_data;
+reg [BLOCK_ADDRESS_SIZE - 1:0]  block_read_address;
+reg [WIDTH-1:0]                 block_read_data;
 
 localparam int WORD_SHIFT        = $clog2(WIDTH/8);
 localparam int BYTE_OFFSET_WIDTH = (WIDTH > 8) ? $clog2(WIDTH/8) : 1;
@@ -276,7 +277,7 @@ always_ff @(posedge clk or posedge reset) begin
         if (mem_write && ~mem_read) begin
             if (mem_count < MEM_PARTS) begin
                 `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_WRITE/ xlen=%0d width=%0d block_write_address=0x%0h block_write_data=0x%0h", XLEN, WIDTH, mem_word_addr + mem_count, mem_idata_reg[WIDTH*(mem_count+1)-1 -: WIDTH])); `endif
-                block_write_address <= mem_word_addr + mem_count;
+                block_write_address <= mem_word_addr[BLOCK_ADDRESS_SIZE - 1 : 0] + mem_count;
                 block_write_data    <= mem_idata_reg[WIDTH*(mem_count+1)-1 -: WIDTH];
                 block_write_en      <= 1'b1;
 
@@ -296,8 +297,8 @@ always_ff @(posedge clk or posedge reset) begin
             if (mem_count < MEM_PARTS) begin
                 if (mem_read_state == 2'b00) begin
                     `ifdef LOG_MEMORY `LOG("tl_memory", ("/MEM_READ/ xlen=%0d width=%0d block_read_address=0x%0h mem_part=%0d", XLEN, WIDTH, mem_word_addr + mem_count, mem_count)); `endif
-                    block_read_address <= mem_word_addr + mem_count;
-                    mem_read_state <= 2'b01;
+                    block_read_address <= mem_word_addr[BLOCK_ADDRESS_SIZE - 1 : 0] + mem_count;
+                    mem_read_state     <= 2'b01;
                     if (mem_count == 0) begin
                         mem_odata_reg <= {XLEN{1'b0}};
                     end
