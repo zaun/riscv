@@ -147,17 +147,13 @@ module block_ram #(
 	output reg  [WIDTH-1:0]   					read_data
 );
 
-wire gnd, vcc;
-assign gnd = 1'b0;
-assign vcc = 1'b1;
-
 initial begin
     `ASSERT((WIDTH >= 8), "WIDTH must be at least 8 bits.");
     `ASSERT((WIDTH % 8 == 0), "WIDTH must be divisible by 8 to ensure byte alignment.");
     `ASSERT((SIZE % (WIDTH / 8) == 0), "SIZE must be a multiple of WIDTH/8 to ensure proper byte alignment.");
 end
 
-(* ram_style = "distributed" *)
+(* ram_style = "block" *)
 reg [WIDTH-1:0] memory[(SIZE/(WIDTH/8)) - 1:0];
 
 always @(posedge clk or posedge reset) begin
