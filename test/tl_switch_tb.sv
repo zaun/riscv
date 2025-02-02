@@ -2,6 +2,8 @@
 `default_nettype none
 
 `define DEBUG
+// `define LOG_SWITCH
+// `define LOG_MEM_INTERFACE
 // `define LOG_MEMORY
 
 `include "tl_switch.sv"
@@ -19,10 +21,10 @@ module tl_switch_tb;
 // Parameters
 // ====================================
 parameter XLEN = `XLEN;
-parameter SID_WIDTH = 8;          // Source ID length for TileLink (updated to match tl_switch)
+parameter SID_WIDTH = 8;     // Source ID length for TileLink (updated to match tl_switch)
 parameter MEM_SIZE = 4096;   // Memory size (supports addresses up to 0x0FFF)
 parameter MAX_RETRIES = 3;   // Maximum number of retry attempts
-parameter TRACK_DEPTH = 16;
+parameter TRACK_DEPTH = 4;
 
 // ====================================
 // Clock and Reset
@@ -341,15 +343,20 @@ begin
     cpu_size     = size;
     cpu_wdata    = value;
 
+    `ifdef LOG_SWITCH `LOG("tl_switch_tb", ("/perform_write 1/ cpu_ready=%0d cpu_read=%0d cpu_ack=%0d cpu_valid=%0d", cpu_ready, cpu_read, cpu_ack, cpu_valid)); `endif
     @(posedge clk);
     wait (cpu_ack == 1'b1);
+    `ifdef LOG_SWITCH `LOG("tl_switch_tb", ("/perform_write 2/ cpu_ready=%0d cpu_read=%0d cpu_ack=%0d cpu_valid=%0d", cpu_ready, cpu_read, cpu_ack, cpu_valid)); `endif
     cpu_ready    = 1'b0;    // CPU Request is acknowledged
 
     // Wait for CPU to acknowledge the write
     @(posedge clk);
+    `ifdef LOG_SWITCH `LOG("tl_switch_tb", ("/perform_write 3/ cpu_ready=%0d cpu_read=%0d cpu_ack=%0d cpu_valid=%0d", cpu_ready, cpu_read, cpu_ack, cpu_valid)); `endif
     wait (cpu_valid == 1'b1);
+    `ifdef LOG_SWITCH `LOG("tl_switch_tb", ("/perform_write 4/ cpu_ready=%0d cpu_read=%0d cpu_ack=%0d cpu_valid=%0d", cpu_ready, cpu_read, cpu_ack, cpu_valid)); `endif
 
     @(posedge clk);
+    `ifdef LOG_SWITCH `LOG("tl_switch_tb", ("/perform_write 5/ cpu_ready=%0d cpu_read=%0d cpu_ack=%0d cpu_valid=%0d", cpu_ready, cpu_read, cpu_ack, cpu_valid)); `endif
 
     if (cpu_valid != 1'b0 && cpu_rdata != 1'b0 &&
         cpu_denied != 1'b0 && cpu_corrupt != 1'b0) begin
