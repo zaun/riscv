@@ -98,7 +98,7 @@ module tl_ul_output #(
     input  wire                 tl_a_valid,
     output reg                  tl_a_ready,
     input  wire [2:0]           tl_a_opcode,
-    input  wire [2:0]           tl_a_param,
+    input  wire [2:0]           tl_a_param,     // Included for TileLink, not used by module
     input  wire [2:0]           tl_a_size,
     input  wire [SID_WIDTH-1:0] tl_a_source,
     input  wire [XLEN-1:0]      tl_a_address,
