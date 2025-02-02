@@ -75,7 +75,7 @@ synthesis: src/soc.sv
 	yosys -D SYNTHESIS -q -p "read_verilog -sv -I src/ src/soc.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -noabc9 -json synthesis.json"
 
 stat:
-	yosys -D SYNTHESIS -p "read_verilog -sv src/soc.sv; hierarchy -check; check; stat"
+	yosys -D SYNTHESIS -p "read_verilog -sv src/soc.sv; hierarchy -check; check; synth_gowin -top top -noabc9; stat -hier"
 
 # Place and Route
 bitstream: synthesis
@@ -110,7 +110,7 @@ synthesis2: src/soc_simple.sv
 	yosys -D SYNTHESIS -q -p "read_verilog -sv -I src/ src/soc_simple.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -noabc9 -json synthesis.json"
 
 stat2:
-	yosys -D SYNTHESIS -p "read_verilog -sv src/soc_simple.sv; hierarchy -check; check; stat"
+	yosys -D SYNTHESIS -p "read_verilog -sv src/soc_simple.sv; hierarchy -check; check; synth_gowin -top top -noabc9; stat -hier"
 
 # Place and Route
 bitstream2: synthesis2
