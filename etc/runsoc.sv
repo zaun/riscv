@@ -2,15 +2,15 @@
 `default_nettype none
 
 // `define LOG_UNKNOWN_INST
-`define LOG_CPU
+// `define LOG_CPU
 // `define LOG_REG
-`define LOG_BIOS
-`define LOG_MEM_INTERFACE
-`define LOG_MEMORY
+// `define LOG_BIOS
+// `define LOG_MEM_INTERFACE
+// `define LOG_MEMORY
 // `define LOG_MMIO
 // `define LOG_CLOCKED
-`define LOG_SWITCH
-`define LOG_SWITCH_MAP
+// `define LOG_SWITCH
+// `define LOG_SWITCH_MAP
 // `define LOG_UART
 // `define LOG_CSR
 
@@ -106,6 +106,7 @@ initial begin
 
     // $display("Number of clock cycles: %00d pc=0x%0h", cycle_count, uut.cpu_inst.pc);
     `DISPLAY_MEM_RANGE_ARRAY(soc_inst.memory_inst.block_ram_inst, 8, 16'h0F00, 16'h0FFF);
+    $display("%00b (%00h)", soc_inst.output_inst.register, soc_inst.output_inst.register);
 
     $finish;
 end
