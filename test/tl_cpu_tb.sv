@@ -4,14 +4,14 @@
 `define DEBUG // Turn on debugging ports
 // `define LOG_MEMORY
 
-`include "cpu.sv"
+`include "tl_cpu.sv"
 `include "tl_memory.sv"
 
 `ifndef XLEN
 `define XLEN 32
 `endif
 
-module cpu_tb;
+module tl_cpu_tb;
 `include "test/test_macros.sv"
 
 // ====================================
@@ -67,7 +67,7 @@ wire                    cpu_trap;
 // Instantiate the CPU (TileLink Master)
 // The CPU includes the cpu_mem_interface internally with the timing fix.
 // ====================================
-rv_cpu #(
+tl_cpu #(
     .XLEN(XLEN),
     .START_ADDRESS(32'h0000_0000) // force start address to 0
 ) uut (
@@ -153,8 +153,8 @@ tl_memory #(
 // Simulation Sequence
 // ====================================
 initial begin
-    $dumpfile("cpu_tb.vcd");
-    $dumpvars(0, cpu_tb);
+    $dumpfile("tl_cpu_tb.vcd");
+    $dumpvars(0, tl_cpu_tb);
 
     // ====================================
     // Load immediate (lui, addi)
@@ -167,7 +167,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "lui x2, 0x12345, addi x2, x2, 0x678: Load 0x12345678 into x2")
+    `TEST("tl_cpu.sv", "lui x2, 0x12345, addi x2, x2, 0x678: Load 0x12345678 into x2")
     // Loading 0x12345678 into x2
     mock_mem.block_ram_inst.memory['h0000] = 32'h12345137; // lui x2, 0x12345 -> 0x12345137
     mock_mem.block_ram_inst.memory['h0001] = 32'h67810113; // addi x2, x2, 0x678 -> 0x67810113
@@ -191,7 +191,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "lb x2, 0x11(x0): Load byte x2 with 0x56 (positive) from address 0x0011(x0)")
+    `TEST("tl_cpu.sv", "lb x2, 0x11(x0): Load byte x2 with 0x56 (positive) from address 0x0011(x0)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h01100103; // lb x2, 0x11(x0) -> 0x01100103
     mock_mem.block_ram_inst.memory['h0001] = 32'h0000006F; // jal x0, 0 -> 0x0000006F
 
@@ -210,7 +210,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "lb x3, 0x12(x0): Load byte x3 with 0xF6 (negative) from address 0x0012(x0)")
+    `TEST("tl_cpu.sv", "lb x3, 0x12(x0): Load byte x3 with 0xF6 (negative) from address 0x0012(x0)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h01200183; // lb x3, 0x12(x0) -> 0x01200183
     mock_mem.block_ram_inst.memory['h0001] = 32'h0000006F; // jal x0, 0 -> 0x0000006F
 
@@ -229,7 +229,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "lbu x2, 0x11(x0): Load byte x2 with 0xF6 from address 0x0011(x0)")
+    `TEST("tl_cpu.sv", "lbu x2, 0x11(x0): Load byte x2 with 0xF6 from address 0x0011(x0)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h01104103; // lbu x2, 0x11(x0) -> 0x01104103
     mock_mem.block_ram_inst.memory['h0001] = 32'h0000006F; // jal x0, 0 -> 0x0000006F
 
@@ -253,7 +253,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "lh x3, 0x10(x0): Load half-word x3 with 0x5678 from address 0x0010(x0)")
+    `TEST("tl_cpu.sv", "lh x3, 0x10(x0): Load half-word x3 with 0x5678 from address 0x0010(x0)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h01001183; // lh x3, 0x10(x0) -> 0x01001183
     mock_mem.block_ram_inst.memory['h0001] = 32'h0000006F; // jal x0, 0 -> 0x0000006F
 
@@ -275,7 +275,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "lhu x3, 0x10(x0): Load half-word x3 with 0x5678 from address 0x0010(x0)")
+    `TEST("tl_cpu.sv", "lhu x3, 0x10(x0): Load half-word x3 with 0x5678 from address 0x0010(x0)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h01005183; // lhu x3, 0x10(x0) -> 0x01005183
     mock_mem.block_ram_inst.memory['h0001] = 32'h0000006F; // jal x0, 0 -> 0x0000006F
 
@@ -297,7 +297,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "lw x1, 0x10(x0): Load x1 with 0x12345678 from address 0x0010(x0)")
+    `TEST("tl_cpu.sv", "lw x1, 0x10(x0): Load x1 with 0x12345678 from address 0x0010(x0)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h01002083; // lw x1, 0x10(x0) -> 0x01002083
     mock_mem.block_ram_inst.memory['h0001] = 32'h0000006F; // jal x0, 0 -> 0x0000006F
 
@@ -326,7 +326,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "sb x2, 0(x1): Store a byte from x2 into the memory address stored in x1")
+    `TEST("tl_cpu.sv", "sb x2, 0(x1): Store a byte from x2 into the memory address stored in x1")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0 0x50 -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h12345137; // lui x2, 0x12345 -> 0x12345137
     mock_mem.block_ram_inst.memory['h0002] = 32'h67810113; // addi x2, x2, 0x678 -> 0x67810113
@@ -357,7 +357,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "sb x2, 0(x1): Store a half-word from x2 into the memory address stored in x1")
+    `TEST("tl_cpu.sv", "sb x2, 0(x1): Store a half-word from x2 into the memory address stored in x1")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0 0x50 -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h12345137; // lui x2, 0x12345 -> 0x12345137
     mock_mem.block_ram_inst.memory['h0002] = 32'h67810113; // addi x2, x2, 0x678 -> 0x67810113
@@ -389,7 +389,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "sb x2, 0(x1): Store a word from x2 into the memory address stored in x1")
+    `TEST("tl_cpu.sv", "sb x2, 0(x1): Store a word from x2 into the memory address stored in x1")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0 0x50 -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h12345137; // lui x2, 0x12345 -> 0x12345137
     mock_mem.block_ram_inst.memory['h0002] = 32'h67810113; // addi x2, x2, 0x678 -> 0x67810113
@@ -426,7 +426,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BEQ taken when x1 == x2")
+    `TEST("tl_cpu.sv", "BEQ taken when x1 == x2")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h00208663; // BEQ x1, x2, +12     -> 0x00208663
@@ -449,7 +449,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BEQ not taken when x1 != x2")
+    `TEST("tl_cpu.sv", "BEQ not taken when x1 != x2")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05100113; // addi x2, x0, 0x51   -> 0x05100113
     mock_mem.block_ram_inst.memory['h0002] = 32'h00208663; // BEQ x1, x2, +12     -> 0x00208663
@@ -472,7 +472,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BNE not taken when x1 == x2")
+    `TEST("tl_cpu.sv", "BNE not taken when x1 == x2")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h00209663; // BNE x1, x2, +12     -> 0x00209663
@@ -496,7 +496,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BNE taken when x1 != x2")
+    `TEST("tl_cpu.sv", "BNE taken when x1 != x2")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05100113; // addi x2, x0, 0x51   -> 0x05100113
     mock_mem.block_ram_inst.memory['h0002] = 32'h00209663; // BNE x1, x2, +12     -> 0x00209663
@@ -519,7 +519,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BLT not taken when x1 == x2")
+    `TEST("tl_cpu.sv", "BLT not taken when x1 == x2")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020c663; // BLT x1, x2, +12     -> 0x0020c663
@@ -542,7 +542,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BLT not taken when x1 > x2 (x2 signed)")
+    `TEST("tl_cpu.sv", "BLT not taken when x1 > x2 (x2 signed)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05100093; // addi x1, x0, 0x51   -> 0x05100093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020c663; // BLT x1, x2, +12     -> 0x0020c663
@@ -565,7 +565,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BLT taken when x1 < x2 (x1 signed)")
+    `TEST("tl_cpu.sv", "BLT taken when x1 < x2 (x1 signed)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05100113; // addi x2, x0, 0x51   -> 0x05100113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020c663; // BLT x1, x2, +12     -> 0x0020c663
@@ -588,7 +588,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BLTU not taken when x1 == x2")
+    `TEST("tl_cpu.sv", "BLTU not taken when x1 == x2")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020E663; // BLTU x1, x2, +12    -> 0x0020E663
@@ -611,7 +611,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BLTU taken when x1 < x2 (x2 unsigned)")
+    `TEST("tl_cpu.sv", "BLTU taken when x1 < x2 (x2 unsigned)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05100113; // addi x2, x0, 0x51   -> 0x05100113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020E663; // BLTU x1, x2, +12    -> 0x0020E663
@@ -634,7 +634,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BLTU not taken when x1 > x2 (x1 unsigned)")
+    `TEST("tl_cpu.sv", "BLTU not taken when x1 > x2 (x1 unsigned)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05100093; // addi x1, x0, 0x51   -> 0x05100093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020E663; // BLTU x1, x2, +12    -> 0x0020E663
@@ -657,7 +657,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BGE taken when x1 == x2")
+    `TEST("tl_cpu.sv", "BGE taken when x1 == x2")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020d663; // BGE x1, x2, +12     -> 0x0020d663
@@ -680,7 +680,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BGE taken when x1 > x2 (x2 signed)")
+    `TEST("tl_cpu.sv", "BGE taken when x1 > x2 (x2 signed)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05100093; // addi x1, x0, 0x51   -> 0x05100093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020D663; // BGE x1, x2, +12     -> 0x0020D663
@@ -703,7 +703,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BGE not taken when x1 < x2 (x1 signed)")
+    `TEST("tl_cpu.sv", "BGE not taken when x1 < x2 (x1 signed)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05100113; // addi x2, x0, 0x51   -> 0x05100113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020D663; // BGE x1, x2, +12     -> 0x0020D663
@@ -726,7 +726,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BGEU taken when x1 == x2")
+    `TEST("tl_cpu.sv", "BGEU taken when x1 == x2")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020F663; // BGEU x1, x2, +12    -> 0x0020F663
@@ -749,7 +749,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BGEU taken when x1 < x2 (x2 unsigned)")
+    `TEST("tl_cpu.sv", "BGEU taken when x1 < x2 (x2 unsigned)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05000093; // addi x1, x0, 0x50   -> 0x05000093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05100113; // addi x2, x0, 0x51   -> 0x05100113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020F663; // BGEU x1, x2, +12    -> 0x0020F663
@@ -772,7 +772,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    `TEST("rv_cpu", "BGEU taken when x1 > x2 (x1 unsigned)")
+    `TEST("tl_cpu.sv", "BGEU taken when x1 > x2 (x1 unsigned)")
     mock_mem.block_ram_inst.memory['h0000] = 32'h05100093; // addi x1, x0, 0x51   -> 0x05100093
     mock_mem.block_ram_inst.memory['h0001] = 32'h05000113; // addi x2, x0, 0x50   -> 0x05000113
     mock_mem.block_ram_inst.memory['h0002] = 32'h0020F663; // BGEU x1, x2, +12    -> 0x0020F663
@@ -797,7 +797,7 @@ initial begin
     #10; // Hold reset for 10ns
     @(posedge clk);
 
-    // `TEST("rv_cpu", "Mini program")
+    // `TEST("tl_cpu.sv", "Mini program")
 
     // mock_mem.block_ram_inst.memory['h0000] = 32'h00100093; // addi x1,x0,0x1
     // mock_mem.block_ram_inst.memory['h0001] = 32'h01000113; // addi x2,x0,0x10

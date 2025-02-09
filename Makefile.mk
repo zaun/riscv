@@ -41,9 +41,8 @@ all:
 	@echo "#                                                                              #"
 	@echo "################################################################################"
 	@echo ""
-	@echo "make soc ................... Build a SoC with CPU, TL switch, memory, bios, UART"
-	@echo "                             and output LEDs"
-	@echo "make soc2 .................. Build a SoC with CPU, memory and debugging LEDs"
+	@echo "make p_soc ................. Build a SOC with a paralell bus"
+	@echo "make tl_soc ................ Build a SOC with a TileLink bus"
 	@echo "make load .................. Load the built SoC to the FPGA"
 	@echo ""
 	@echo "make test .................. Run all testbenches"
@@ -54,7 +53,7 @@ all:
 # SOC Build 1
 ##
 
-soc: bios out
+p_soc: bios out
 
 # Compile a C program in riscv asm
 bios: etc/main.c
@@ -70,12 +69,12 @@ bios: etc/main.c
 
 
 # Synthesis
-synthesis: src/soc.sv
+synthesis: src/p_soc.sv
 	mkdir -p ./graph
-	yosys -D SYNTHESIS -q -p "read_verilog -sv -I src/ src/soc.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -noabc9 -json synthesis.json"
+	yosys -D SYNTHESIS -q -p "read_verilog -sv -I src/ src/p_soc.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -noabc9 -json synthesis.json"
 
 stat:
-	yosys -D SYNTHESIS -p "read_verilog -sv src/soc.sv; hierarchy -check; check; synth_gowin -top top -noabc9; stat -hier"
+	yosys -D SYNTHESIS -p "read_verilog -sv src/p_soc.sv; hierarchy -check; check; synth_gowin -top top -noabc9; stat -hier"
 
 # Place and Route
 bitstream: synthesis
@@ -89,7 +88,7 @@ out: bitstream
 # SOC Build 2
 ##
 
-soc2: bios2 out2
+tl_soc: bios2 out2
 
 # Compile a C program in riscv asm
 bios2: etc/main.c
@@ -105,12 +104,12 @@ bios2: etc/main.c
 
 
 # Synthesis
-synthesis2: src/soc_simple.sv
+synthesis2: src/tl_soc.sv
 	mkdir -p ./graph
-	yosys -D SYNTHESIS -q -p "read_verilog -sv -I src/ src/soc_simple.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -noabc9 -json synthesis.json"
+	yosys -D SYNTHESIS -q -p "read_verilog -sv -I src/ src/tl_soc.sv; hierarchy -check; check; show -colors 1 -width -signed -stretch -prefix graph/soc -format dot; synth_gowin -top top -noabc9 -json synthesis.json"
 
 stat2:
-	yosys -D SYNTHESIS -p "read_verilog -sv src/soc_simple.sv; hierarchy -check; check; synth_gowin -top top -noabc9; stat -hier"
+	yosys -D SYNTHESIS -p "read_verilog -sv src/tl_soc.sv; hierarchy -check; check; synth_gowin -top top -noabc9; stat -hier"
 
 # Place and Route
 bitstream2: synthesis2

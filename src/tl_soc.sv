@@ -11,7 +11,7 @@
 `default_nettype none
 
 // Include necessary modules
-`include "cpu.sv"
+`include "tl_cpu.sv"
 `include "tl_switch.sv"
 `include "tl_memory.sv"
 `include "tl_ul_bios.sv"
@@ -23,43 +23,23 @@
 
 module top
 (
-    CLK,
-    BTN_S1,
-    LED,
-    UART_RX,
-    UART_TX,
+    input  wire        CLK,              // System Clock
+    input  wire        BTN_S1,           // Button for reset
+    output reg  [5:0]  LED,              // 6 LEDs
+    input  wire        UART_RX,          // Receive line
+    output reg         UART_TX,          // Transmit line
 
-    O_sdram_clk,
-    O_sdram_cke,
-    O_sdram_cs_n,
-    O_sdram_cas_n,
-    O_sdram_ras_n,
-    O_sdram_wen_n,
-    IO_sdram_dq,
-    O_sdram_addr,
-    O_sdram_ba,
-    O_sdram_dqm
+    output reg         O_sdram_clk,
+    output reg         O_sdram_cke,
+    output reg         O_sdram_cs_n,     // chip select
+    output reg         O_sdram_cas_n,    // columns address select
+    output reg         O_sdram_ras_n,    // row address select
+    output reg         O_sdram_wen_n,    // write enable
+    inout  wire [31:0] IO_sdram_dq,      // 32 bit bidirectional data bus
+    output reg  [10:0] O_sdram_addr,     // 11 bit multiplexed address bus
+    output reg  [1:0]  O_sdram_ba,       // two banks
+    output reg  [3:0]  O_sdram_dqm       // 32/4
 );
-
-// ──────────────────────────
-// Port Type Declarations
-// ──────────────────────────
-input  wire        CLK;              // System Clock
-input  wire        BTN_S1;           // Button for reset
-output reg  [5:0]  LED;              // 6 LEDs
-input  wire        UART_RX;          // Receive line
-output reg         UART_TX;          // Transmit line
-
-output reg         O_sdram_clk;
-output reg         O_sdram_cke;
-output reg         O_sdram_cs_n;     // chip select
-output reg         O_sdram_cas_n;    // columns address select
-output reg         O_sdram_ras_n;    // row address select
-output reg         O_sdram_wen_n;    // write enable
-inout  wire [31:0] IO_sdram_dq;      // 32 bit bidirectional data bus
-output reg  [10:0] O_sdram_addr;     // 11 bit multiplexed address bus
-output reg  [1:0]  O_sdram_ba;       // two banks
-output reg  [3:0]  O_sdram_dqm;      // 32/4
 
 // ──────────────────────────
 // Parameters
@@ -75,11 +55,11 @@ parameter CLK_FREQ_MHZ  = 27;
 // Clock and Reset
 // ──────────────────────────
 
-wire clk;
+(* DONT_TOUCH = "TRUE", KEEP = "TRUE" *) wire sys_clk;
 wire reset;
 
-assign clk   = CLK;
 assign reset = BTN_S1;
+assign sys_clk = CLK;
 
 // ──────────────────────────
 // LEDs
@@ -211,14 +191,14 @@ wire                   output_s_d_denied;
 // Instantiate the TileLink Switch
 // ──────────────────────────
 tl_switch #(
-    .NUM_INPUTS    (NUM_INPUTS),
-    .NUM_OUTPUTS   (NUM_OUTPUTS),
-    .XLEN          (XLEN),
-    .SID_WIDTH     (SID_WIDTH),
-    .TRACK_DEPTH   (TRACK_DEPTH)
+    .NUM_INPUTS     (NUM_INPUTS),
+    .NUM_OUTPUTS    (NUM_OUTPUTS),
+    .XLEN           (XLEN),
+    .SID_WIDTH      (SID_WIDTH),
+    .TRACK_DEPTH    (TRACK_DEPTH)
 ) switch_inst (
-    .clk           (clk),
-    .reset         (reset),
+    .clk            (sys_clk),
+    .reset          (reset),
 
     // ======================
     // TileLink A Channel - Masters
@@ -282,7 +262,7 @@ tl_switch #(
 // ──────────────────────────
 // Instantiate the CPU
 // ──────────────────────────
-rv_cpu #(
+tl_cpu #(
     .MHARTID_VAL     (32'h0000_0000),
     .XLEN            (XLEN),
     .SID_WIDTH       (SID_WIDTH),
@@ -291,8 +271,8 @@ rv_cpu #(
     .NMI_COUNT       (1),
     .IRQ_COUNT       (1)
 ) cpu_inst (
-    .clk        (clk),
-    .reset      (reset),
+    .clk             (sys_clk),
+    .reset           (reset),
 
     `ifdef SUPPORT_ZICSR
     .external_irq ({ uart_irq }),
@@ -333,7 +313,7 @@ tl_memory #(
     .SIZE           ('h10000),
     .SID_WIDTH      (SID_WIDTH)
 ) memory_inst (
-    .clk            (clk),
+    .clk            (sys_clk),
     .reset          (reset),
 
     // TileLink A Channel
@@ -367,7 +347,7 @@ tl_ul_bios #(
     .SID_WIDTH      (SID_WIDTH),
     .SIZE           ('h100)
 ) bios_inst (
-    .clk            (clk),
+    .clk            (sys_clk),
     .reset          (reset),
 
     // TileLink A Channel
@@ -401,7 +381,7 @@ tl_ul_output #(
     .SID_WIDTH      (SID_WIDTH),
     .OUTPUTS        (6)
 ) output_inst (
-    .clk            (clk),
+    .clk            (sys_clk),
     .reset          (reset),
 
     .outputs        (),

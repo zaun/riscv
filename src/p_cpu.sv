@@ -1,13 +1,13 @@
 `ifndef __CPU__
 `define __CPU__
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// rv_cpu Module
+// p_cpu.sv Module
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- * @module rv_cpu
+ * @module p_cpu
  * @brief A RISC-V RV32/64I CPU Core with Optional Extensions.
  *
- * The `rv_cpu` module implements a non-pipelined RISC-V CPU core supporting the RV32/64I base
+ * The `p_cpu` module implements a non-pipelined RISC-V CPU core supporting the RV32/64I base
  * integer instruction set. It includes optional support for several extensions, including Zicsr
  * (Control and Status Registers), M (Multiplication and Division), B (Bit Manipulation), and 
  * F (Floating-Point Unit).
@@ -87,7 +87,6 @@
 `include "instructions.sv"
 `include "cpu_alu.sv"
 `include "cpu_insdecode.sv"
-`include "tl_interface.sv"
 `include "cpu_regfile.sv"
 `ifdef SUPPORT_ZICSR
 `include "cpu_csr.sv"
@@ -99,10 +98,9 @@
 `include "cpu_bmu.sv"
 `endif
 
-module rv_cpu #(
+module p_cpu #(
     parameter MHARTID_VAL     = 32'h0000_0000,  // The Hardware ID for the CPU
     parameter XLEN            = 32,             // Data width: 32 bits
-    parameter SID_WIDTH       = 8,              // Source ID Width
     parameter START_ADDRESS   = 32'h8000_0000,  // Default start address
     parameter MTVEC_RESET_VAL = 32'h8000_0000,  // Default mtvec address
     parameter NMI_COUNT       = 1,              // Number of NMIs (must satisfy XLEN > IRQ_COUNT + NMI_COUNT)
@@ -116,28 +114,17 @@ module rv_cpu #(
     input wire                  external_nmi, // Non-Maskable Interrupt
     `endif
 
-    // TileLink TL-UL Interface signals
-    // A Channel (Requests)
-    output wire                 tl_a_valid,
-    input  wire                 tl_a_ready,
-    output wire [2:0]           tl_a_opcode,
-    output wire [2:0]           tl_a_param,
-    output wire [2:0]           tl_a_size,
-    output wire [SID_WIDTH-1:0] tl_a_source,
-    output wire [XLEN-1:0]      tl_a_address,
-    output wire [XLEN/8-1:0]    tl_a_mask,
-    output wire [XLEN-1:0]      tl_a_data,
-
-    // D Channel (Responses)
-    input  wire                  tl_d_valid,
-    output wire                  tl_d_ready,
-    input  wire [2:0]            tl_d_opcode,
-    input  wire [1:0]            tl_d_param,
-    input  wire [2:0]            tl_d_size,
-    input  wire [SID_WIDTH-1:0]  tl_d_source,
-    input  wire [XLEN-1:0]       tl_d_data,
-    input  wire                  tl_d_corrupt,
-    input  wire                  tl_d_denied,
+    // Paralell bus signals
+    output reg                   bus_valid,   // Each source asserts valid when it has a request
+    output reg                   bus_rw,      // Read/Write signal from each source
+    output reg  [XLEN-1:0]       bus_addr,    // Address from each source
+    output reg  [XLEN-1:0]       bus_wdata,   // Write data from each source
+    output reg  [XLEN/8-1:0]     bus_wstrb,   // Ready signal back to each source
+    output reg  [2:0]            bus_size,    // Size of each request in log2(Bytes per beat)
+    input  wire                  bus_ready,   // Ready signal back to each source
+    input  wire [XLEN-1:0]       bus_rdata,   // Read data returned to each source
+    input  wire                  bus_denied,  // Denied signal back to each source
+    input  wire                  bus_corrupt, // Corrupt signal back to each source
 
     // Signals
     output wire                  trap,
@@ -167,7 +154,7 @@ typedef enum logic [3:0] {
     STATE_WB    = 4'b0101,  // Write Back
     STATE_TRAP  = 4'b0111   // Trap Handling
     `ifdef SUPPORT_M
-    ,STATE_MUL_DIV   // Multiplication and Division Operations
+    ,STATE_MUL_DIV          // Multiplication and Division Operations
     `endif
 } cpu_state_t;
 cpu_state_t state;
@@ -368,63 +355,28 @@ cpu_mdu #(.XLEN(XLEN)) mdu_inst (
 // ──────────────────────────
 // Memory Interface Signals
 // ──────────────────────────
-logic                   mem_ready;
+logic                   mem_valid;
 logic [XLEN-1:0]        mem_address;
 logic [XLEN-1:0]        mem_wdata;
 logic [XLEN/8-1:0]      mem_wstrb;
 logic [2:0]             mem_size;   // Byte, Halfword, Word
 logic                   mem_read;
-logic                   mem_ack;
 logic [XLEN-1:0]        mem_rdata;
-logic                   mem_valid;
+logic                   mem_ready;
 logic                   mem_denied;
 logic                   mem_corrupt;
 
-
-// ──────────────────────────
-// Instantiate Memory Interface
-// ──────────────────────────
-tl_interface #(
-    .XLEN(XLEN),
-    .SID_WIDTH(SID_WIDTH)
-) mem_if_inst (
-    .clk         (clk),
-    .reset       (reset),
-
-    // CPU Side
-    .cpu_ready   (mem_ready),
-    .cpu_address (mem_address),
-    .cpu_wdata   (mem_wdata),
-    .cpu_wstrb   (mem_wstrb),
-    .cpu_size    (mem_size),
-    .cpu_read    (mem_read),
-    .cpu_ack     (mem_ack),
-    .cpu_rdata   (mem_rdata),
-    .cpu_denied  (mem_denied),
-    .cpu_corrupt (mem_corrupt),
-    .cpu_valid   (mem_valid),
-
-    // TileLink TL-UL Interface signals
-    .tl_a_valid  (tl_a_valid),
-    .tl_a_ready  (tl_a_ready),
-    .tl_a_opcode (tl_a_opcode),
-    .tl_a_param  (tl_a_param),
-    .tl_a_size   (tl_a_size),
-    .tl_a_source (tl_a_source),
-    .tl_a_address(tl_a_address),
-    .tl_a_mask   (tl_a_mask),
-    .tl_a_data   (tl_a_data),
-
-    .tl_d_valid  (tl_d_valid),
-    .tl_d_ready  (tl_d_ready),
-    .tl_d_opcode (tl_d_opcode),
-    .tl_d_param  (tl_d_param),
-    .tl_d_size   (tl_d_size),
-    .tl_d_source (tl_d_source),
-    .tl_d_data   (tl_d_data),
-    .tl_d_corrupt(tl_d_corrupt),
-    .tl_d_denied (tl_d_denied)
-);
+// CPU Signals to Bus
+assign bus_valid   = mem_valid;
+assign bus_addr    = mem_address;
+assign bus_wdata   = mem_wdata;
+assign bus_wstrb   = mem_wstrb;
+assign bus_size    = mem_size;
+assign bus_rw      = mem_read;
+assign mem_rdata   = bus_rdata;
+assign mem_denied  = bus_denied;
+assign mem_corrupt = bus_corrupt;
+assign mem_ready   = bus_ready;
 
 `ifdef SUPPORT_ZICSR
 // ──────────────────────────
@@ -516,7 +468,7 @@ always_ff @(posedge clk) begin
         trap_cause          <= TRAP_UNKNOWN;
         trap_reg            <= 1'b0;
         rd_write_en         <= 1'b0;
-        mem_ready           <= 1'b0;
+        mem_valid           <= 1'b0;
         halt                <= 1'b0;
         if_wait             <= 1'b0;
         mem_wait            <= 1'b0;
@@ -529,7 +481,7 @@ always_ff @(posedge clk) begin
         csr_op_valid        <= 1'b0;
         trap_state          <= STORE_PC;
         `endif
-        `ifdef LOG_CPU `LOG("rv_cpu", ("Reset, PC=0x%0h", START_ADDRESS)); `endif
+        `ifdef LOG_CPU `LOG("p_cpu", ("Reset, PC=0x%0h", START_ADDRESS)); `endif
     end else if (halt) begin
     end else begin
         case (state)
@@ -539,7 +491,7 @@ always_ff @(posedge clk) begin
                 trap_cause          <= TRAP_UNKNOWN;
                 trap_reg            <= 1'b0;
                 rd_write_en         <= 1'b0;
-                mem_ready           <= 1'b0;
+                mem_valid           <= 1'b0;
                 halt                <= 1'b0;
                 if_wait             <= 1'b0;
                 mem_wait            <= 1'b0;
@@ -552,20 +504,20 @@ always_ff @(posedge clk) begin
                 csr_op_valid        <= 1'b0;
                 trap_state          <= STORE_PC;
                 `endif
-                `ifdef LOG_CPU `LOG("rv_cpu", ("/RESET/, PC=0x%0h", START_ADDRESS)); `endif
+                `ifdef LOG_CPU `LOG("p_cpu", ("/RESET/, PC=0x%0h", START_ADDRESS)); `endif
             end
 
             STATE_IF: begin
                 if (halt == 1'b1) begin
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_IF/ HALT detected")); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_IF/ HALT detected")); `endif
                     // HALT caught
                     // trap_cause  <= TRAP_HALT;
                     // state       <= STATE_TRAP;
                     // test_cpu_reg    <= 6'b101010;
-                end else if (~mem_valid && ~mem_ready && ~if_wait) begin
+                end else if (~mem_ready && ~mem_valid && ~if_wait) begin
                     if (pc[1:0] != 2'b00) begin
                         // PC is misaligned
-                        `ifdef LOG_CPU `ERROR("rv_cpu", ("/STATE_IF/ Misaligned PC")); `endif
+                        `ifdef LOG_CPU `ERROR("p_cpu", ("/STATE_IF/ Misaligned PC")); `endif
                         trap_cause  <= TRAP_I_MISALIGNED;
                         state       <= STATE_TRAP;
                     end else begin
@@ -573,7 +525,7 @@ always_ff @(posedge clk) begin
                         // Fetch instruction
                         rd_write_en      <= 1'b0; // Regfile Write enabled
                         trap_cause       <= TRAP_UNKNOWN;
-                        mem_ready        <= 1'b1;
+                        mem_valid        <= 1'b1; // Memory request valid
                         mem_address      <= pc;
                         mem_wdata        <= {XLEN{1'b0}};
                         mem_wstrb        <= {8{1'b0}};
@@ -584,15 +536,12 @@ always_ff @(posedge clk) begin
                         csr_reg_write_en <= 1'b0; // CSR Register Write enabled
                         `endif
                         `ifdef LOG_CPU $display("\n===\n"); `endif
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_IF/ Fetching instruction from PC=0x%0h", pc)); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_IF/ Fetching instruction from PC=0x%0h", pc)); `endif
                     end
-                end else if (mem_ready && mem_ack) begin
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_IF/ Fetching instruction acknowledged")); `endif
-                    test_cpu_reg    <= 6'b000010; // Stuck here
-                    mem_ready       <= 1'b0; // Deassert after acknowledgment
-                end else if (mem_valid) begin
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_IF/ Fetched instruction from mem_address=0x%0h INS=%31b (0x%00h)", mem_address, mem_rdata[31:0], mem_rdata[31:0])); `endif
+                end else if (mem_ready && mem_valid) begin
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_IF/ Fetched instruction from mem_address=0x%0h INS=%31b (0x%00h)", mem_address, mem_rdata[31:0], mem_rdata[31:0])); `endif
                     // Fetched instruction
+                    mem_valid       <= 1'b0;
                     test_cpu_reg    <= 6'b000100;
                     instr           <= mem_rdata[31:0]; // Instructions are 32 bits
                     if_wait         <= 1'b0;
@@ -601,7 +550,7 @@ always_ff @(posedge clk) begin
             end
 
             STATE_ID: begin
-                `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_ID/ Instruction decoded")); `endif
+                `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_ID/ Instruction decoded")); `endif
                 // Decode Instruction
                 rs1_addr    <= rs1;
                 rs2_addr    <= rs2;
@@ -611,7 +560,7 @@ always_ff @(posedge clk) begin
 
             STATE_EX: begin
                 // test_cpu_reg    <= 6'b001000;
-                `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute opcode=%7b, funct3=%3b, funct7=%7b rd=%5b, rs1=%5b, imm=0x%0h", opcode, funct3, funct7, rd, rs1, imm)); `endif
+                `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute opcode=%7b, funct3=%3b, funct7=%7b rd=%5b, rs1=%5b, imm=0x%0h", opcode, funct3, funct7, rd, rs1, imm)); `endif
                 alu_operand_a <= rs1_data;
                 alu_operand_b <= is_op_imm ? imm : rs2_data;
                 alu_control  <= `ALU_ADD;
@@ -651,13 +600,13 @@ always_ff @(posedge clk) begin
                         `INST_REMW  : if (XLEN >= 64) begin work_unit <= MDU; mdu_control <= `MDU_REM; end
                         `INST_REMUW : if (XLEN >= 64) begin work_unit <= MDU; mdu_control <= `MDU_REMU; end
                         default: begin
-                            `ifdef LOG_CPU_UNKNOWN_INST `ERROR("rv_cpu", ("/STATE_EX/ Unknow command opcode=%00b funct7=%00b funct3=%00b", opcode, funct7, funct3)); `endif
-                            `ifdef LOG_CPU `ERROR("rv_cpu", ("/STATE_EX/ Unknow command opcode=%00b funct7=%00b funct3=%00b", opcode, funct7, funct3)); `endif
+                            `ifdef LOG_CPU_UNKNOWN_INST `ERROR("p_cpu", ("/STATE_EX/ Unknow command opcode=%00b funct7=%00b funct3=%00b", opcode, funct7, funct3)); `endif
+                            `ifdef LOG_CPU `ERROR("p_cpu", ("/STATE_EX/ Unknow command opcode=%00b funct7=%00b funct3=%00b", opcode, funct7, funct3)); `endif
                             trap_cause <= TRAP_INSTRUCTION;
                             state      <= STATE_TRAP;
                         end
                     endcase
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute mul/div")); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute mul/div")); `endif
                 end else
                 `endif // SUPPORT_M /////////////////////////////////////////////////
                 if (is_op_imm || is_op || is_lui || is_auipc || is_branch) begin
@@ -713,13 +662,13 @@ always_ff @(posedge clk) begin
                             `INST_SRLW     : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SRL; end
                             `INST_SRAW     : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SRA; end
                             default: begin
-                                `ifdef LOG_CPU_UNKNOWN_INST `ERROR("rv_cpu", ("/STATE_EX/ Unknow instruction op pc=%00h (%b)", pc, {opcode, funct7, funct3})); `endif
-                                `ifdef LOG_CPUT `ERROR("rv_cpu", ("/STATE_EX/ Unknow instruction op pc=%00h (%b)", pc, {opcode, funct7, funct3})); `endif
+                                `ifdef LOG_CPU_UNKNOWN_INST `ERROR("p_cpu", ("/STATE_EX/ Unknow instruction op pc=%00h (%b)", pc, {opcode, funct7, funct3})); `endif
+                                `ifdef LOG_CPUT `ERROR("p_cpu", ("/STATE_EX/ Unknow instruction op pc=%00h (%b)", pc, {opcode, funct7, funct3})); `endif
                                 trap_cause <= TRAP_INSTRUCTION;
                                 state      <= STATE_TRAP;
                             end
                         endcase
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute op rs1_data=0x%0h rs2_data=0x%0h", rs1_data, rs2_data)); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute op rs1_data=0x%0h rs2_data=0x%0h", rs1_data, rs2_data)); `endif
                     end else if (is_op_imm) begin
                         alu_operand_b <= (funct3 == 3'b001 || funct3 == 3'b101) ? {27'b0, instr[24:20]} : imm;
                         casex ({opcode, funct3, imm[31:20]})
@@ -758,13 +707,13 @@ always_ff @(posedge clk) begin
                             `INST_SRLIW  : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SRL; end
                             `INST_SRAIW  : if (XLEN >= 64) begin work_unit <= ALU; alu_control <= `ALU_SRA; end
                             default: begin
-                                `ifdef LOG_CPU_UNKNOWN_INST `ERROR("rv_cpu", ("/STATE_EX/ Unknow instruction op_imm (%b)", {opcode, funct3, imm[31:19]})); `endif
-                                `ifdef LOG_CPU `ERROR("rv_cpu", ("/STATE_EX/ Unknow instruction op_imm (%b)", {opcode, funct3, imm[31:19]})); `endif
+                                `ifdef LOG_CPU_UNKNOWN_INST `ERROR("p_cpu", ("/STATE_EX/ Unknow instruction op_imm (%b)", {opcode, funct3, imm[31:19]})); `endif
+                                `ifdef LOG_CPU `ERROR("p_cpu", ("/STATE_EX/ Unknow instruction op_imm (%b)", {opcode, funct3, imm[31:19]})); `endif
                                 trap_cause <= TRAP_INSTRUCTION;
                                 state      <= STATE_TRAP;
                             end
                         endcase
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute op_imm rs1_data=0x%0h imm=0x%0h", rs1_data, imm)); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute op_imm rs1_data=0x%0h imm=0x%0h", rs1_data, imm)); `endif
                     end else if (is_branch) begin
                         case ({opcode, funct3})
                             `INST_BEQ : begin work_unit <= ALU; alu_control <= `ALU_SUB; end
@@ -774,25 +723,25 @@ always_ff @(posedge clk) begin
                             `INST_BGE : begin work_unit <= ALU; alu_control <= `ALU_SLT; end
                             `INST_BGEU: begin work_unit <= ALU; alu_control <= `ALU_SLTU; end
                             default: begin
-                                `ifdef LOG_CPU_UNKNOWN_INST `ERROR("rv_cpu", ("/STATE_EX/ Unknow instruction branch (%b)", {opcode, opcode, funct3})); `endif
-                                `ifdef LOG_CPU `ERROR("rv_cpu", ("/STATE_EX/ Unknow instruction branch (%b)", {opcode, opcode, funct3})); `endif
+                                `ifdef LOG_CPU_UNKNOWN_INST `ERROR("p_cpu", ("/STATE_EX/ Unknow instruction branch (%b)", {opcode, opcode, funct3})); `endif
+                                `ifdef LOG_CPU `ERROR("p_cpu", ("/STATE_EX/ Unknow instruction branch (%b)", {opcode, opcode, funct3})); `endif
                                 trap_cause <= TRAP_INSTRUCTION;
                                 state      <= STATE_TRAP;
                             end
                         endcase
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute branch")); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute branch")); `endif
                     end else if (is_lui) begin
                         alu_operand_a <= {XLEN{1'b0}};
                         alu_operand_b <= imm;
                         alu_control   <= `ALU_ADD; // ADD
                         work_unit     <= ALU;
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute lui")); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute lui")); `endif
                     end else if (is_auipc) begin
                         alu_operand_a <= pc;
                         alu_operand_b <= imm;
                         alu_control   <= `ALU_ADD; // ADD
                         work_unit     <= ALU;
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute auipc")); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute auipc")); `endif
                     end
                 end else if (is_mem) begin
                     // Memory Address Calculation
@@ -801,9 +750,9 @@ always_ff @(posedge clk) begin
                     alu_control   <= `ALU_ADD; // ADD
                     work_unit     <= ALU;
                     state         <= STATE_MEM;
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute Memory request, ALU ADD rs1_data=0x%0h imm=0x%0h", rs1_data, imm)); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute Memory request, ALU ADD rs1_data=0x%0h imm=0x%0h", rs1_data, imm)); `endif
                 end else if (is_jal || is_jalr) begin
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute jal/jalr")); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute jal/jalr")); `endif
                     state         <= STATE_WB;
                 end else if (is_system) begin
                     state         <= STATE_WB;
@@ -817,12 +766,12 @@ always_ff @(posedge clk) begin
 
                     casex ({opcode, funct3, funct12})
                         `INST_EBREAK: begin
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("INST_EBREAK")); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("INST_EBREAK")); `endif
                             trap_cause <= TRAP_EBREAK;
                             state      <= STATE_TRAP;
                         end
                         `INST_ECALL: begin
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("INST_ECALL")); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("INST_ECALL")); `endif
                             trap_cause <= TRAP_ECALL;
                             state      <= STATE_TRAP;
                         end
@@ -830,18 +779,18 @@ always_ff @(posedge clk) begin
                         `INST_MRET: begin
                             trap_reg <= 1'b0;
                             pc       <= csr_mepc;
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("MRET PC updated to 0x%0h", csr_mepc)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("MRET PC updated to 0x%0h", csr_mepc)); `endif
                             state <= STATE_IF;
                         end
                         `INST_CSRRW: begin
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ INST_CSRRW: csr_op_addr=%00h rs1_data=0x%00h", imm[11:0], rs1_data)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ INST_CSRRW: csr_op_addr=%00h rs1_data=0x%00h", imm[11:0], rs1_data)); `endif
                             rd_write_en    <= 1'b1;         // Enable writing to the destination register
                             csr_op_control <= `CSR_RW;      // Indicate a CSR read-write operation
                             csr_op_operand <= rs1_data;     // Operand from rs1
                             csr_op_valid   <= 1'b1;         // Indicate that the CSR operation is valid
                         end
                         `INST_CSRRS: begin
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ INST_CSRRS: csr_op_addr=%00h rs1_data=0x%00h", imm[11:0], rs1_data)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ INST_CSRRS: csr_op_addr=%00h rs1_data=0x%00h", imm[11:0], rs1_data)); `endif
                             rd_write_en    <= 1'b1;         // Enable writing to the destination register
                             csr_op_control <= `CSR_RS;      // CSR read and set operation
                             csr_op_operand <= rs1_data;     // Operand from rs1
@@ -870,15 +819,15 @@ always_ff @(posedge clk) begin
                         end
                 `endif // SUPPORT_ZICSR /////////////////////////////////////////////
                         default: begin
-                            `ifdef LOG_CPU `ERROR("rv_cpu", ("UNKNOWN SYSTEM opcode=%00b funct3=%00b imm[31:19]=%00b", opcode, funct3, imm[31:19])); `endif
+                            `ifdef LOG_CPU `ERROR("p_cpu", ("UNKNOWN SYSTEM opcode=%00b funct3=%00b imm[31:19]=%00b", opcode, funct3, imm[31:19])); `endif
                             trap_cause <= TRAP_INSTRUCTION;
                             state      <= STATE_TRAP;
                         end
                     endcase
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_EX/ Execute system")); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_EX/ Execute system")); `endif
                 end else begin
                     // Handle Undefined Instructions
-                    `ifdef LOG_CPU `ERROR("rv_cpu", ("/STATE_EX/ Execute unknown")); `endif
+                    `ifdef LOG_CPU `ERROR("p_cpu", ("/STATE_EX/ Execute unknown")); `endif
                     trap_cause <= TRAP_INSTRUCTION;
                     state      <= STATE_TRAP;
                 end
@@ -902,12 +851,12 @@ always_ff @(posedge clk) begin
 
             STATE_MEM: begin
                 // test_cpu_reg    <= 6'b010000;
-                // `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ mem_wait=%0b mem_ready=%0b mem_valid=%0b mem_rdata=0x%08h",
-                //         mem_wait, mem_ready, mem_valid, mem_rdata)); `endif
+                // `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ mem_wait=%0b mem_valid=%0b mem_ready=%0b mem_rdata=0x%08h",
+                //         mem_wait, mem_valid, mem_ready, mem_rdata)); `endif
                 // Memory Access
-                if (~mem_valid && ~mem_ready && ~mem_wait) begin
+                if (~mem_ready && ~mem_valid && ~mem_wait) begin
                     // Memory access is being requested
-                    mem_ready   <= 1'b1;
+                    mem_valid   <= 1'b1;
                     mem_wait    <= 1'b1;
                     mem_address <= alu_result;
                     // mem_wdata   <= rs2_data;
@@ -918,7 +867,7 @@ always_ff @(posedge clk) begin
                             mem_read  <= 1'b1;
                             mem_size  <= 3'b000;
                             mem_wstrb <= 8'b0;
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Load LB/LBU from address 0x%0h", alu_result)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Load LB/LBU from address 0x%0h", alu_result)); `endif
                         end
                         `INST_LHU,
                         `INST_LH: begin
@@ -930,7 +879,7 @@ always_ff @(posedge clk) begin
                                 mem_read  <= 1'b1;
                                 mem_size  <= 3'b001;
                                 mem_wstrb <= 8'b0;
-                                `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Load LH/LHU from address 0x%0h", alu_result)); `endif
+                                `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Load LH/LHU from address 0x%0h", alu_result)); `endif
                             end
                         end
                         `INST_LWU,
@@ -943,7 +892,7 @@ always_ff @(posedge clk) begin
                                 mem_read  <= 1'b1;
                                 mem_size  <= 3'b010;
                                 mem_wstrb <= 8'b0;
-                                `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Load LW/LWU from address 0x%0h", alu_result)); `endif
+                                `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Load LW/LWU from address 0x%0h", alu_result)); `endif
                             end
                         end
                         `INST_LD: if (XLEN >= 64) begin
@@ -955,7 +904,7 @@ always_ff @(posedge clk) begin
                                 mem_read  <= 1'b1;
                                 mem_size  <= 3'b011; // Double Word
                                 mem_wstrb <= 8'b0;
-                                `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Load LD from address 0x%0h", alu_result)); `endif
+                                `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Load LD from address 0x%0h", alu_result)); `endif
                             end
                         end
                         `INST_SB: begin
@@ -965,7 +914,7 @@ always_ff @(posedge clk) begin
                             // Determine the byte lane based on the address
                             if (XLEN == 32) begin
                                 mem_wstrb <= 4'b0001 << alu_result[1:0];
-                                `ifdef LOG_CPU_CPU `LOG("rv_cpu", ("/STATE_MEM/ Store SB to address 0x%0h rs2_data=%0h mem_wstrb=%00b", alu_result, rs2_data, 4'b0001 << alu_result[1:0])); `endif
+                                `ifdef LOG_CPU_CPU `LOG("p_cpu", ("/STATE_MEM/ Store SB to address 0x%0h rs2_data=%0h mem_wstrb=%00b", alu_result, rs2_data, 4'b0001 << alu_result[1:0])); `endif
                             end else if (XLEN == 64) begin
                                 mem_wstrb <= 8'b00000001 << alu_result[2:0];
                             end else if (XLEN == 128) begin
@@ -986,11 +935,11 @@ always_ff @(posedge clk) begin
                                 case (alu_result[1:0])
                                     2'b00: begin
                                         mem_wstrb <= 4'b0011;
-                                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Store SH to address 0x%0h rs2_data=%0h mem_wstrb=%0b", alu_result, rs2_data, 4'b0011)); `endif
+                                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Store SH to address 0x%0h rs2_data=%0h mem_wstrb=%0b", alu_result, rs2_data, 4'b0011)); `endif
                                     end
                                     2'b10: begin;
                                         mem_wstrb <= 4'b1100;
-                                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Store SH to address 0x%0h rs2_data=%0h mem_wstrb=%0b", alu_result, rs2_data, 4'b1100)); `endif
+                                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Store SH to address 0x%0h rs2_data=%0h mem_wstrb=%0b", alu_result, rs2_data, 4'b1100)); `endif
                                     end
                                     default: begin
                                         mem_wait   <= 1'b0;
@@ -1048,7 +997,7 @@ always_ff @(posedge clk) begin
                                 // Ensure address is word-aligned
                                 if (alu_result[1:0] == 2'b00) begin
                                     mem_wstrb <= 4'b1111;
-                                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Store SW to address 0x%0h rs2_data=%0h mem_wstrb=%0b", alu_result, rs2_data, 4'b1111)); `endif
+                                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Store SW to address 0x%0h rs2_data=%0h mem_wstrb=%0b", alu_result, rs2_data, 4'b1111)); `endif
                                 end else begin
                                     mem_wait   <= 1'b0;
                                     mem_wdata  <= 0;
@@ -1094,7 +1043,7 @@ always_ff @(posedge clk) begin
                                 if (alu_result[2:0] == 3'b000) begin
                                     mem_wstrb <= 8'b11111111;
                                     `ifdef LOG_CPU 
-                                        `LOG("rv_cpu", ("/STATE_MEM/ Store SD to address 0x%0h rs2_data=%0h mem_wstrb=%0b", 
+                                        `LOG("p_cpu", ("/STATE_MEM/ Store SD to address 0x%0h rs2_data=%0h mem_wstrb=%0b", 
                                                 alu_result, rs2_data, 8'b11111111));
                                     `endif
                                 end else begin
@@ -1109,7 +1058,7 @@ always_ff @(posedge clk) begin
                                 if (alu_result[3:0] == 4'b0000) begin
                                     mem_wstrb <= 16'b1111111111111111;
                                     `ifdef LOG_CPU 
-                                        `LOG("rv_cpu", ("/STATE_MEM/ Store SD to address 0x%0h rs2_data=%0h mem_wstrb=%0b", 
+                                        `LOG("p_cpu", ("/STATE_MEM/ Store SD to address 0x%0h rs2_data=%0h mem_wstrb=%0b", 
                                                 alu_result, rs2_data, 16'b1111111111111111));
                                     `endif
                                 end else begin
@@ -1132,39 +1081,37 @@ always_ff @(posedge clk) begin
                             state      <= STATE_TRAP;
                         end
                     endcase
-                end else if (mem_ack && mem_ready) begin
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Store/Load acknowledged")); `endif
-                    mem_ready <= 1'b0; // Deassert after acknowledgment
-                end else if (mem_valid && mem_read) begin
+                end else if (mem_ready && mem_read) begin
                     // Memory is ready to be loaded
                     mem_wait  <= 1'b0;
+                    mem_valid <= 1'b0;
                     pc        <= pc + 4;
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("PC updated to 0x%0h", pc + 4)); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("PC updated to 0x%0h", pc + 4)); `endif
                     state     <= STATE_IF;
                     case ({opcode, funct3})
                         `INST_LB: begin
                             rd_addr     <= rd;
                             rd_write_en <= 1'b1;
                             rd_data     <= {{(XLEN-8){mem_rdata[7]}}, mem_rdata[7:0]};
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Received LB Data=0x%0h for rd=%0d", {{(XLEN-8){mem_rdata[7]}}, mem_rdata[7:0]}, rd)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Received LB Data=0x%0h for rd=%0d", {{(XLEN-8){mem_rdata[7]}}, mem_rdata[7:0]}, rd)); `endif
                         end
                         `INST_LH: begin
                             rd_addr     <= rd;
                             rd_write_en <= 1'b1;
                             rd_data     <= {{(XLEN-16){mem_rdata[15]}}, mem_rdata[15:0]};
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Received LH Data=0x%0h for rd=%0d", {{(XLEN-16){mem_rdata[15]}}, mem_rdata[15:0]}, rd)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Received LH Data=0x%0h for rd=%0d", {{(XLEN-16){mem_rdata[15]}}, mem_rdata[15:0]}, rd)); `endif
                         end
                         `INST_LW: begin
                             rd_addr     <= rd;
                             rd_write_en <= 1'b1;
                             rd_data     <= {{(XLEN-32){mem_rdata[31]}}, mem_rdata[31:0]};
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Received LW Data=0x%0h for rd=%0d", {{(XLEN-32){mem_rdata[31]}}, mem_rdata[31:0]}, rd)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Received LW Data=0x%0h for rd=%0d", {{(XLEN-32){mem_rdata[31]}}, mem_rdata[31:0]}, rd)); `endif
                         end
                         `INST_LBU: begin
                             rd_addr     <= rd;
                             rd_write_en <= 1'b1;
                             rd_data     <= {{(XLEN-8){1'b0}}, mem_rdata[7:0]};
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Received LWU Data=0x%0h for rd=%0d", {{(XLEN-8){1'b0}}, mem_rdata[7:0]}, rd)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Received LWU Data=0x%0h for rd=%0d", {{(XLEN-8){1'b0}}, mem_rdata[7:0]}, rd)); `endif
                         end
                         `INST_LHU: begin
                             rd_addr     <= rd;
@@ -1180,34 +1127,35 @@ always_ff @(posedge clk) begin
                             rd_addr     <= rd;
                             rd_write_en <= 1'b1;
                             rd_data     <= {{(XLEN-64){mem_rdata[63]}}, mem_rdata[63:0]};
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Received LW Data=0x%0h for rd=%0d", mem_rdata[63:0], rd)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Received LW Data=0x%0h for rd=%0d", mem_rdata[63:0], rd)); `endif
                         end
                         default: begin
                             trap_cause <= TRAP_INSTRUCTION;
                             state      <= STATE_TRAP;
                         end
                     endcase
-                end else if (mem_valid && ~mem_read) begin
+                end else if (mem_ready && ~mem_read) begin
                     mem_wait  <= 1'b0;
+                    mem_valid <= 1'b0;
                     if (mem_corrupt) begin
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Memory is corrupt")); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Memory is corrupt")); `endif
                     end
                     if (mem_denied) begin
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Memory is denied")); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Memory is denied")); `endif
                     end
                     // Memory is written
                     pc        <= pc + 4;
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ PC updated to 0x%0h", pc + 4)); `endif
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_MEM/ Write Done")); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ PC updated to 0x%0h", pc + 4)); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_MEM/ Write Done")); `endif
                     state     <= STATE_IF;
                 end else begin
-                    // `ifdef LOG_CPU `WARN("rv_cpu", ("/STATE_MEM/ WTF mem_valid=%00d mem_read=%00d mem_ack=%00d mem_ready=%00d mem_wait=%00d",mem_valid, mem_read, mem_ack, mem_ready, mem_wait)); `endif
+                    // `ifdef LOG_CPU `WARN("p_cpu", ("/STATE_MEM/ WTF mem_ready=%00d mem_read=%00d mem_valid=%00d mem_wait=%00d",mem_ready, mem_read, mem_valid, mem_wait)); `endif
                 end
             end
 
             STATE_WB: begin
                 // test_cpu_reg    <= 6'b100000;
-                `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB: is_op_imm=%0b is_op=%0b is_lui=%0b is_auipc=%0b rd=%0d alu_result=0x%0h",
+                `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/: is_op_imm=%0b is_op=%0b is_lui=%0b is_auipc=%0b rd=%0d alu_result=0x%0h",
                         is_op_imm, is_op, is_lui, is_auipc, rd, alu_result)); `endif
                 // Write Back
                 rd_write_en <= 1'b0;
@@ -1215,18 +1163,18 @@ always_ff @(posedge clk) begin
                     case (work_unit)
                         ALU: begin
                             rd_data <= alu_result;
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB Writing ALU 0x%0h to rd=%0d", alu_result, rd)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/ Writing ALU 0x%0h to rd=%0d", alu_result, rd)); `endif
                         end
                         `ifdef SUPPORT_B
                         BMU: begin
                             rd_data <= bmu_result;
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB Writing BMU 0x%0h to rd=%0d", bmuu_result, rd)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/ Writing BMU 0x%0h to rd=%0d", bmuu_result, rd)); `endif
                         end
                         `endif
                         `ifdef SUPPORT_M
                         MDU: begin
                             rd_data <= mdu_result;
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB Writing MDU 0x%0h to rd=%0d", mdu_result, rd)); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/ Writing MDU 0x%0h to rd=%0d", mdu_result, rd)); `endif
                         end
                         `endif
                     endcase
@@ -1236,7 +1184,7 @@ always_ff @(posedge clk) begin
                     rd_data     <= pc + 4;
                     rd_addr     <= rd;
                     rd_write_en <= 1'b1;
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("STATE_WB JAL/JALR Writing 0x%0h to rd=%0d", pc + 4, rd)); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/ JAL/JALR Writing 0x%0h to rd=%0d", pc + 4, rd)); `endif
                 end
 
                 // Branch Decision Logic
@@ -1252,7 +1200,7 @@ always_ff @(posedge clk) begin
                         default: take_branch = 1'b0;
                     endcase
                     pc <= take_branch ? pc + imm : pc + 4;
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("take_branch is %0d PC updated to 0x%0h", take_branch, (take_branch ? pc + imm : pc + 4))); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("take_branch is %0d PC updated to 0x%0h", take_branch, (take_branch ? pc + imm : pc + 4))); `endif
                 end else if (is_jal) begin
                     if (pc == pc + imm) begin
                         halt <= 1'b1;
@@ -1261,17 +1209,17 @@ always_ff @(posedge clk) begin
                     // The compiler add's -4 to the imm so "jal x0 0" is compiled as "jal x0 -4"
                     // So the addumption is that pc = pc + 4 happens before the jump
                     pc <= pc + imm;
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("JAL PC updated to 0x%0h", pc + imm)); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/ JAL PC updated to 0x%0h pc=%00h imm=%00h", pc + imm, pc, imm)); `endif
                 end else if (is_jalr) begin
                     if (pc == (rs1_data + imm) & ~32'b1) begin
                         halt <= 1'b1;
                     end
                     pc <= (rs1_data + imm) & ~32'b1; // Clear LSB
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("JALR PC updated to 0x%0h. rs1_addr=%0d rs1_data=0x%0h imm=0x%0h", (rs1_data + imm) & ~32'b1, rs1_addr, rs1_data, imm)); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/ JALR PC updated to 0x%0h. rs1_addr=%0d rs1_data=0x%0h imm=0x%0h", (rs1_data + imm) & ~32'b1, rs1_addr, rs1_data, imm)); `endif
                 end else if (is_system) begin
                     `ifdef SUPPORT_ZICSR
                     if (csr_op_valid && csr_op_done) begin
-                        `ifdef LOG_CPU `LOG("rv_cpu", ("/STATE_WB/ csr_op_rdata=%00b", csr_op_rdata)); `endif
+                        `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/ csr_op_rdata=%00b", csr_op_rdata)); `endif
                         // CSR operation finished
                         csr_op_valid <= 1'b0;
                         rd_write_en  <= 1'b0;
@@ -1287,7 +1235,7 @@ always_ff @(posedge clk) begin
                     `endif
                 end else begin
                     pc <= pc + 4;
-                    `ifdef LOG_CPU `LOG("rv_cpu", ("PC updated to 0x%0h", pc + 4)); `endif
+                    `ifdef LOG_CPU `LOG("p_cpu", ("/STATE_WB/ PC updated to 0x%0h", pc + 4)); `endif
                 end
 
                 // Check for Interrupts
@@ -1305,7 +1253,7 @@ always_ff @(posedge clk) begin
 
             STATE_TRAP: begin
                 // test_cpu_reg    <= 6'b001111;
-                `ifdef LOG_CPU `WARN("rv_cpu", ("/TRAP/")); `endif
+                `ifdef LOG_CPU `WARN("p_cpu", ("/TRAP/")); `endif
                 // Handle Exception
                 `ifdef SUPPORT_ZICSR
                 case(trap_state)
@@ -1342,12 +1290,12 @@ always_ff @(posedge clk) begin
                         if (csr_mtvec[1:0] == 2'b00) begin
                             // Direct mode
                             pc    <= csr_mtvec & ~(32'h3);
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("TRAP PC updated to 0x%0h", csr_mtvec & ~(32'h3))); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("TRAP PC updated to 0x%0h", csr_mtvec & ~(32'h3))); `endif
                             state <= STATE_IF;
                         end else if (csr_mtvec[1:0] == 2'b01) begin
                             // Vector mode
                             pc    <= (csr_mtvec & ~(32'h3)) + (csr_mcause << 2);
-                            `ifdef LOG_CPU `LOG("rv_cpu", ("TRAP PC updated to 0x%0h", (csr_mtvec & ~(32'h3)) + (csr_mcause << 2))); `endif
+                            `ifdef LOG_CPU `LOG("p_cpu", ("TRAP PC updated to 0x%0h", (csr_mtvec & ~(32'h3)) + (csr_mcause << 2))); `endif
                             state <= STATE_IF;
                         end else begin
                             // Unsupported mode, force reset
@@ -1364,7 +1312,7 @@ always_ff @(posedge clk) begin
             end
 
             default: begin
-                `ifdef LOG_CPU `ERROR("rv_cpu", ("DEFAULT STATE SHOULD NOT HAPPEN")); `endif
+                `ifdef LOG_CPU `ERROR("p_cpu", ("DEFAULT STATE SHOULD NOT HAPPEN")); `endif
                 state <= STATE_RESET;
             end
         endcase
@@ -1376,8 +1324,8 @@ end
 // Debug memory reads
 // ──────────────────────────
 always_ff @(posedge clk) begin
-    `LOG("rv_cpu", ("/CLK/ mem_ready=%0d mem_address=%0h mem_read=%0d mem_valid=%0d, mem_rdata=0x%0h mem_wdata=0x%0h", mem_ready, mem_address, mem_read, mem_valid, mem_rdata, mem_wdata));
-    `LOG("rv_cpu", ("/CLK/ alu_operand_a=%0h alu_operand_b=%0h alu_result=%0h", alu_operand_a, alu_operand_b, alu_result));
+    `LOG("p_cpu", ("/CLK/ mem_valid=%0d mem_address=%0h mem_read=%0d mem_ready=%0d, mem_rdata=0x%0h mem_wdata=0x%0h", mem_valid, mem_address, mem_read, mem_ready, mem_rdata, mem_wdata));
+    `LOG("p_cpu", ("/CLK/ alu_operand_a=%0h alu_operand_b=%0h alu_result=%0h", alu_operand_a, alu_operand_b, alu_result));
 end
 `endif
 

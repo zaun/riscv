@@ -29,7 +29,7 @@ The repository is organized as follows:
 ### Source Files Overview
 
 - **Core Components**:
-  - **`cpu.sv`**: Main CPU module integrating all submodules.
+  - **`tl_cpu.sv`**: Main CPU module integrating all submodules.
   - **`cpu_alu.sv`**: Arithmetic Logic Unit (ALU) for arithmetic and logical operations.
   - **`cpu_mdu.sv`**: Multiply-Divide Unit (MDU) for handling multiplication and division instructions.
   - **`cpu_regfile.sv`**: Register file for storing CPU registers.
@@ -69,9 +69,9 @@ The repository is organized as follows:
 
 ### Simulations
 
-- `make run_cpu`: Simulates a basic CPU running the `etc/main.c` program. Connects the `rv_cpu` to a `tl_switch` with a single `tl_memory`. Outputs a memory dump and generates a waveform (`graph/cpu_runner.vcd`).
+- `make run_cpu`: Simulates a basic CPU running the `etc/main.c` program. Connects the `tl_cpu.sv` to a `tl_switch` with a single `tl_memory`. Outputs a memory dump and generates a waveform (`graph/cpu_runner.vcd`).
   - *This recompiles the program before simulation.*
-- `make run_soc`: Simulates a basic SoC running the `etc/bios/bios.c` program. Connects the `rv_cpu` to a `tl_switch` with `tl_ul_bios`, `tl_memory`, `tl_ul_output`, and `tl_ul_uart`. Outputs a waveform (`graph/soc_runner.vcd`).
+- `make run_soc`: Simulates a basic SoC running the `etc/bios/bios.c` program. Connects the `tl_cpu.sv` to a `tl_switch` with `tl_ul_bios`, `tl_memory`, `tl_ul_output`, and `tl_ul_uart`. Outputs a waveform (`graph/soc_runner.vcd`).
   - *This recompiles the BIOS before simulation.*
 
 **Example**:  

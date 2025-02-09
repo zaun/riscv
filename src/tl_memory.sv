@@ -253,7 +253,7 @@ endgenerate
 
 // Memory Access
 localparam int MEM_PARTS = XLEN / WIDTH;    // Number of reads/writes for each XLEN of data
-localparam int MEM_PARTS_LOG2 = $clog2(MEM_PARTS);
+localparam int MEM_PARTS_LOG2 = (MEM_PARTS > 1) ? $clog2(MEM_PARTS) : 1;
 reg [MEM_PARTS_LOG2:0] mem_count;      // Internal Counter for mem ops
 reg                    mem_read;       // Input set high for read mem op
 reg                    mem_write;      // Input set high for write mem op

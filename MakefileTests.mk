@@ -102,35 +102,35 @@ test_cpu_insdecode:
 	# Clean Up: Remove intermediate .vvp files
 	rm -f graph/cpu_insdecode_tb.vvp graph/cpu_insdecode_m.vvp graph/cpu_insdecode_csr.vvp graph/cpu_insdecode_fence.vvp
 
-test_cpu:
+test_tl_cpu:
 	mkdir -p ./graph
 
-	iverilog -g2012 -I src/ -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
-	vvp -N graph/cpu.vvp
-	mv ./cpu_tb.vcd ./graph/cpu_32.vcd
+	iverilog -g2012 -I src/ -o graph/tl_cpu.vvp -s tl_cpu_tb  test/tl_cpu_tb.sv
+	vvp -N graph/tl_cpu.vvp
+	mv ./tl_cpu_tb.vcd ./graph/tl_cpu_32.vcd
 
-	iverilog -g2012 -I src/ -DSUPPORT_M -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
-	vvp -N graph/cpu.vvp
-	mv ./cpu_tb.vcd ./graph/cpu_32_m.vcd
+	iverilog -g2012 -I src/ -DSUPPORT_M -o graph/tl_cpu.vvp -s tl_cpu_tb  test/tl_cpu_tb.sv
+	vvp -N graph/tl_cpu.vvp
+	mv ./tl_cpu_tb.vcd ./graph/tl_cpu_32_m.vcd
 
-	iverilog -g2012 -I src/ -DSUPPORT_B -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
-	vvp -N graph/cpu.vvp
-	mv ./cpu_tb.vcd ./graph/cpu_32_b.vcd
+	iverilog -g2012 -I src/ -DSUPPORT_B -o graph/tl_cpu.vvp -s tl_cpu_tb  test/tl_cpu_tb.sv
+	vvp -N graph/tl_cpu.vvp
+	mv ./tl_cpu_tb.vcd ./graph/tl_cpu_32_b.vcd
 
-	iverilog -g2012 -I src/ -DXLEN=64 -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
-	vvp -N graph/cpu.vvp
-	mv ./cpu_tb.vcd ./graph/cpu_64.vcd
+	iverilog -g2012 -I src/ -DXLEN=64 -o graph/tl_cpu.vvp -s tl_cpu_tb  test/tl_cpu_tb.sv
+	vvp -N graph/tl_cpu.vvp
+	mv ./tl_cpu_tb.vcd ./graph/tl_cpu_64.vcd
 
-	iverilog -g2012 -I src/ -DXLEN=64 -DSUPPORT_M -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
-	vvp -N graph/cpu.vvp
-	mv ./cpu_tb.vcd ./graph/cpu_64_m.vcd
+	iverilog -g2012 -I src/ -DXLEN=64 -DSUPPORT_M -o graph/tl_cpu.vvp -s tl_cpu_tb  test/tl_cpu_tb.sv
+	vvp -N graph/tl_cpu.vvp
+	mv ./tl_cpu_tb.vcd ./graph/tl_cpu_64_m.vcd
 
-	iverilog -g2012 -I src/ -DXLEN=64 -DSUPPORT_B -o graph/cpu.vvp -s cpu_tb  test/cpu_tb.sv
-	vvp -N graph/cpu.vvp
-	mv ./cpu_tb.vcd ./graph/cpu_64_b.vcd
+	iverilog -g2012 -I src/ -DXLEN=64 -DSUPPORT_B -o graph/tl_cpu.vvp -s tl_cpu_tb  test/tl_cpu_tb.sv
+	vvp -N graph/tl_cpu.vvp
+	mv ./tl_cpu_tb.vcd ./graph/tl_cpu_64_b.vcd
 
 	# Clean Up: Remove intermediate .vvp files
-	rm -f graph/cpu.vvp
+	rm -f graph/tl_cpu.vvp
 
 test_tl_interface:
 	mkdir -p ./graph

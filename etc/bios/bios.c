@@ -9,9 +9,9 @@
 // CPU boots to 0x8000_0000
 
 #define CLOCK_MHZ      27
-#define OUTPUT_ADDRESS 0x00010000
-#define UART_ADDRESS   0x00020000
 #define MEMORY_ADDRESS 0x00000F00
+#define OUTPUT_ADDRESS 0x80000000
+#define UART_ADDRESS   0xC0000000
 
 void delay(uint32_t ms) {
     volatile uint32_t count;
@@ -25,13 +25,13 @@ void delay(uint32_t ms) {
 
 int main() {
     volatile uint8_t *mem = (volatile uint8_t *)(MEMORY_ADDRESS);
-    volatile uint8_t *output = (volatile uint8_t *)(OUTPUT_ADDRESS);
+    // volatile uint8_t *output = (volatile uint8_t *)(OUTPUT_ADDRESS);
     *mem = 0;
-    *output = 0;
+    // *output = 0;
 
     while(1) {
         *mem = *mem + 1;
-        *output = *output + 1;
+        // *output = *output + 1;
 
         delay(1);
     }

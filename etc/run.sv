@@ -12,7 +12,7 @@
 // `define LOG_CSR
 
 // Include necessary modules
-`include "cpu.sv"
+`include "tl_cpu.sv"
 `include "tl_switch.sv"
 `include "tl_memory.sv"
 
@@ -101,7 +101,7 @@ logic [0:0]             external_nmi;
 // ====================================
 // Instantiate the CPU (TileLink Master)
 // ====================================
-rv_cpu #(
+tl_cpu #(
     .XLEN(XLEN),
     .SID_WIDTH(SID_WIDTH),
     .START_ADDRESS(32'h0000_0000) // force start address to 0
