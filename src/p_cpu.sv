@@ -115,12 +115,13 @@ module p_cpu #(
     `endif
 
     // Paralell bus signals
-    output reg                   bus_valid,   // Each source asserts valid when it has a request
-    output reg                   bus_rw,      // Read/Write signal from each source
-    output reg  [XLEN-1:0]       bus_addr,    // Address from each source
-    output reg  [XLEN-1:0]       bus_wdata,   // Write data from each source
-    output reg  [XLEN/8-1:0]     bus_wstrb,   // Ready signal back to each source
-    output reg  [2:0]            bus_size,    // Size of each request in log2(Bytes per beat)
+    // outputs are wire due to mem_ registers below
+    output wire                  bus_valid,   // Each source asserts valid when it has a request
+    output wire                  bus_rw,      // Read/Write signal from each source
+    output wire [XLEN-1:0]       bus_addr,    // Address from each source
+    output wire [XLEN-1:0]       bus_wdata,   // Write data from each source
+    output wire [XLEN/8-1:0]     bus_wstrb,   // Ready signal back to each source
+    output wire [2:0]            bus_size,    // Size of each request in log2(Bytes per beat)
     input  wire                  bus_ready,   // Ready signal back to each source
     input  wire [XLEN-1:0]       bus_rdata,   // Read data returned to each source
     input  wire                  bus_denied,  // Denied signal back to each source
