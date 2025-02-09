@@ -122,9 +122,9 @@ module cpu_alu #(
     input  wire [XLEN-1:0] operand_b,
     input  wire [3:0]      control,
     output reg  [XLEN-1:0] result,
-    output reg             zero,
-    output reg             less_than,
-    output reg             unsigned_less_than
+    output wire            zero,
+    output wire            less_than,
+    output wire            unsigned_less_than
 );
 
 // ──────────────────────────

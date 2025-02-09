@@ -30,34 +30,34 @@
 module cpu_insdecode #(
     parameter XLEN = 32  // Data width: 32 or 64 bits
 ) (
-    input  wire [31:0]     instr,
-    output reg  [6:0]      opcode,
-    output reg  [4:0]      rd,
-    output reg  [2:0]      funct3,
-    output reg  [4:0]      rs1,
-    output reg  [4:0]      rs2,
-    output reg  [6:0]      funct7,
-    output reg  [11:0]     funct12,
-    output reg  [XLEN-1:0] imm,
+    input  wire  [31:0]     instr,
+    output wire  [6:0]      opcode,
+    output wire  [4:0]      rd,
+    output wire  [2:0]      funct3,
+    output wire  [4:0]      rs1,
+    output wire  [4:0]      rs2,
+    output wire  [6:0]      funct7,
+    output wire  [11:0]     funct12,
+    output logic [XLEN-1:0] imm,
 
     // Control Signals
-    output reg             is_mem,
-    output reg             is_op_imm,
-    output reg             is_op,
-    output reg             is_lui,
-    output reg             is_auipc,
-    output reg             is_branch,
-    output reg             is_jal,
-    output reg             is_jalr,
-    output reg             is_system
+    output wire             is_mem,
+    output wire             is_op_imm,
+    output wire             is_op,
+    output wire             is_lui,
+    output wire             is_auipc,
+    output wire             is_branch,
+    output wire             is_jal,
+    output wire             is_jalr,
+    output wire             is_system
     `ifdef SUPPORT_ZIFENCEI
-    ,output reg             is_fence
+    ,output wire            is_fence
     `endif
     `ifdef SUPPORT_M
-    ,output reg             is_mul_div
+    ,output wire            is_mul_div
     `endif
     `ifdef SUPPORT_F
-    ,output reg             is_fpu
+    ,output wire            is_fpu
     `endif
 );
 
