@@ -253,14 +253,15 @@ endgenerate
 
 // Memory Access
 localparam int MEM_PARTS = XLEN / WIDTH;    // Number of reads/writes for each XLEN of data
-reg [$clog2(MEM_PARTS):0]   mem_count;      // Internal Counter for mem ops
-reg                         mem_read;       // Input set high for read mem op
-reg                         mem_write;      // Input set high for write mem op
-reg                         mem_start;      // Input set high to start mem op
-reg                         mem_done;       // Output will be high when mem op is done
-reg [1:0]                   mem_read_state; // 00 = set addr, 01 = wait, 10 = read data
-reg [XLEN-1:0]              mem_idata_reg;  // Input memory data register
-reg [XLEN-1:0]              mem_odata_reg;  // Output memory data register
+localparam int MEM_PARTS_LOG2 = $clog2(MEM_PARTS);
+reg [MEM_PARTS_LOG2:0] mem_count;      // Internal Counter for mem ops
+reg                    mem_read;       // Input set high for read mem op
+reg                    mem_write;      // Input set high for write mem op
+reg                    mem_start;      // Input set high to start mem op
+reg                    mem_done;       // Output will be high when mem op is done
+reg [1:0]              mem_read_state; // 00 = set addr, 01 = wait, 10 = read data
+reg [XLEN-1:0]         mem_idata_reg;  // Input memory data register
+reg [XLEN-1:0]         mem_odata_reg;  // Output memory data register
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
@@ -282,7 +283,7 @@ always_ff @(posedge clk or posedge reset) begin
                 block_write_en      <= 1'b1;
 
                 // Increment the counter for the next part
-                mem_count <= mem_count + 1;
+                mem_count <= (mem_count + 1) & {MEM_PARTS_LOG2{1'b1}};
                 mem_done  <= 1'b0;
 
                 // Memory operation completed
@@ -308,7 +309,7 @@ always_ff @(posedge clk or posedge reset) begin
                     mem_odata_reg <= mem_odata_reg | block_read_data << (WIDTH * mem_count);
 
                     // Increment the counter for the next part
-                    mem_count <= mem_count + 1;
+                    mem_count <= (mem_count + 1) & {MEM_PARTS_LOG2{1'b1}};
                     mem_done  <= 1'b0;
 
                     // Memory operation completed

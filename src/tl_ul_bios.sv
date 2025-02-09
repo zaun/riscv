@@ -140,14 +140,15 @@ generate
 endgenerate
 
 // Memory Access
-localparam int MEM_PARTS = XLEN / WIDTH;    // number of reads/writes for each XLEN of data
-reg [$clog2(MEM_PARTS):0]   mem_count;      // internal Counter for mem ops
-reg                         mem_read;       // input set high for read mem op
-reg                         mem_write;      // input set high for read mem op
-reg                         mem_start;      // input set high to start mem op
-reg                         mem_done;       // output will be high when mem op is done
-reg [XLEN-1:0]              mem_idata_reg;   // input memory data register
-reg [XLEN-1:0]              mem_odata_reg;   // input memory data register
+localparam int MEM_PARTS = XLEN / WIDTH;    // Number of reads/writes for each XLEN of data
+localparam int MEM_PARTS_LOG2 = $clog2(MEM_PARTS);
+reg [MEM_PARTS_LOG2:0] mem_count;      // internal Counter for mem ops
+reg                    mem_read;       // input set high for read mem op
+reg                    mem_write;      // input set high for read mem op
+reg                    mem_start;      // input set high to start mem op
+reg                    mem_done;       // output will be high when mem op is done
+reg [XLEN-1:0]         mem_idata_reg;   // input memory data register
+reg [XLEN-1:0]         mem_odata_reg;   // input memory data register
 always_ff @(posedge clk) begin
     if (mem_start && ~mem_done) begin
         if (mem_count < MEM_PARTS) begin
@@ -167,7 +168,7 @@ always_ff @(posedge clk) begin
             end
 
             // Increment the counter for the next part
-            mem_count <= mem_count + 1;
+            mem_count <= (mem_count + 1) & {MEM_PARTS_LOG2{1'b1}};
             mem_done  <= 0;
 
             // Memory operation completed
